@@ -70,6 +70,34 @@ npm run test:e2e
 
 Run `npm run storybook` for the production component catalog on port 6006. `build:deploy` includes that catalog under `dist/storybook`; `dist/build.json` identifies the app version and source commit.
 
+### DGX Spark service
+
+The canonical local service is the Compose project in `/opt/audiobrain`. It
+builds the app with `/audiobrain/` as its browser base path, serves it from the
+`audiobrain-web-1` container, and publishes only
+`127.0.0.1:8937 -> 8080`. Traefik owns public HTTPS routing.
+
+From a clean committed checkout, build or update the service with:
+
+```sh
+cd /opt/audiobrain
+sudo env \
+  AUDIOBRAIN_COMMIT="$(git rev-parse HEAD)" \
+  AUDIOBRAIN_IMAGE_TAG="$(git rev-parse --short=12 HEAD)" \
+  docker compose up -d --build --wait
+```
+
+Check the isolated service before changing Traefik:
+
+```sh
+curl -fsS http://127.0.0.1:8937/healthz
+curl -fsS http://127.0.0.1:8937/build.json
+```
+
+The public router maps `https://videohead.duckdns.org/audiobrain/` to this
+loopback service and strips the prefix. The root AWS build remains unchanged
+because `AUDIOBRAIN_BASE_PATH` defaults to `/` outside this Compose build.
+
 The [GitHub workflow](.github/workflows/deploy-aws.yml) verifies pull requests and main-branch pushes, then publishes through a dedicated AudioBrain GitHub OIDC role when the four verified AWS repository variables are configured. Assets publish before HTML, followed by CloudFront invalidation and public checks. Missing configuration is reported explicitly. [Infrastructure instructions](infra/README.md) cover authenticated inventory, preparation, release identity and rollback; [deployment design](docs/DEPLOYMENT.md) retains the source audit and cutover rationale.
 
 ## Architecture and source inventory

@@ -5,6 +5,7 @@ import react from '@vitejs/plugin-react';
 
 const packageMetadata = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')) as { version: string };
 function currentCommit(): string {
+  if (process.env.AUDIOBRAIN_COMMIT && /^[a-f0-9]{40}$/.test(process.env.AUDIOBRAIN_COMMIT)) return process.env.AUDIOBRAIN_COMMIT;
   if (process.env.GITHUB_SHA && /^[a-f0-9]{40}$/.test(process.env.GITHUB_SHA)) return process.env.GITHUB_SHA;
   try {
     return execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
@@ -13,8 +14,11 @@ function currentCommit(): string {
   }
 }
 const commit = currentCommit();
+const base = process.env.AUDIOBRAIN_BASE_PATH ?? '/';
+if (!base.startsWith('/') || !base.endsWith('/')) throw new Error('AUDIOBRAIN_BASE_PATH must start and end with /.');
 
 export default defineConfig({
+  base,
   define: {
     __APP_VERSION__: JSON.stringify(packageMetadata.version),
     __COMMIT_SHA__: JSON.stringify(commit),

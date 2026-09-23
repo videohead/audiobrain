@@ -1,0 +1,27 @@
+name: audiobrain
+
+services:
+  web:
+    image: local/audiobrain-web:${AUDIOBRAIN_IMAGE_TAG:?AUDIOBRAIN_IMAGE_TAG is required}
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        AUDIOBRAIN_BASE_PATH: /audiobrain/
+        AUDIOBRAIN_COMMIT: ${AUDIOBRAIN_COMMIT:?AUDIOBRAIN_COMMIT is required}
+    restart: unless-stopped
+    init: true
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    logging:
+      driver: json-file
+      options:
+        max-size: 25m
+        max-file: "5"
+    ports:
+      - 127.0.0.1:${AUDIOBRAIN_PORT:-8937}:8080

@@ -1,0 +1,13 @@
+.git
+.github
+.runtime
+coverage
+dist
+node_modules
+playwright-report
+storybook-static
+test-results
+*.log
+.env
+.env.*
+!.env.example
