@@ -25,7 +25,7 @@ export function decodeOscFloat(packet) {
   return Number.isFinite(value) ? { protocol, address, args: [{ type: 'f', value }] } : null;
 }
 export async function startOscGateway({
-  port = 8787, listenPort = 9001, targetPort = 9000, targetHost = '127.0.0.1',
+  port = 8787, listenPort = 9001, targetPort = 9000, targetHost = '127.0.0.1', bindHost = '127.0.0.1',
   allowedOrigins = ['https://audiobrain.org', 'http://127.0.0.1:5178', 'http://localhost:5178'],
   tls,
 } = {}) {
@@ -71,8 +71,8 @@ export async function startOscGateway({
     new Promise(resolve => { try { udp.close(resolve); } catch { resolve(); } }),
   ]).then(() => undefined);
   const startup = await Promise.allSettled([
-    new Promise((resolve, reject) => { server.once('error', reject); server.listen(port, '127.0.0.1', resolve); }),
-    new Promise((resolve, reject) => { udp.once('error', reject); udp.bind(listenPort, '127.0.0.1', resolve); }),
+    new Promise((resolve, reject) => { server.once('error', reject); server.listen(port, bindHost, resolve); }),
+    new Promise((resolve, reject) => { udp.once('error', reject); udp.bind(listenPort, bindHost, resolve); }),
   ]);
   const failed = startup.find(result => result.status === 'rejected');
   if (failed) { await close(); throw failed.reason; }
@@ -89,6 +89,8 @@ if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) 
   const gateway = await startOscGateway({
     port: Number(process.env.OSC_WS_PORT ?? 8787), listenPort: Number(process.env.OSC_LISTEN_PORT ?? 9001),
     targetPort: Number(process.env.OSC_TARGET_PORT ?? 9000), targetHost: process.env.OSC_TARGET_HOST ?? '127.0.0.1',
+    bindHost: process.env.OSC_BIND_HOST ?? '127.0.0.1',
+    ...(process.env.OSC_ALLOWED_ORIGINS ? { allowedOrigins: process.env.OSC_ALLOWED_ORIGINS.split(',').map(origin => origin.trim()).filter(Boolean) } : {}),
     ...(certFile && keyFile ? { tls: { cert: readFileSync(certFile), key: readFileSync(keyFile) } } : {}),
   });
   console.log(`AudioBrain OSC gateway: ${certFile ? 'wss' : 'ws'}://127.0.0.1:${gateway.port}; UDP input 127.0.0.1:${gateway.listenPort}`);

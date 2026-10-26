@@ -1,0 +1,16 @@
+# AudioBrain OSC gateway: WebSocket <-> UDP bridge. See docs/INTEGRATION.md.
+FROM node:22-bookworm-slim
+
+ENV NODE_ENV=production \
+    OSC_BIND_HOST=0.0.0.0
+
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
+
+COPY server/osc-gateway.mjs ./server/osc-gateway.mjs
+
+USER node
+EXPOSE 8787 9001/udp
+
+CMD ["node", "server/osc-gateway.mjs"]

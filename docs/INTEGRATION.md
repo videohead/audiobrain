@@ -101,6 +101,8 @@ uses actual OSC string padding/type tags and big-endian float packets.
 | `OSC_LISTEN_PORT` | `9001`, incoming UDP port, loopback binding |
 | `OSC_TARGET_HOST` | `127.0.0.1`, fixed configured outgoing UDP host |
 | `OSC_TARGET_PORT` | `9000`, fixed configured outgoing UDP port |
+| `OSC_BIND_HOST` | `127.0.0.1`; set `0.0.0.0` only inside a container whose published ports stay on host loopback (see Docker) |
+| `OSC_ALLOWED_ORIGINS` | Optional comma-separated exact origins replacing the three defaults |
 | `OSC_TLS_CERT_FILE` / `OSC_TLS_KEY_FILE` | Optional trusted certificate and key files; configure both to serve WSS |
 
 The browser cannot choose a UDP destination in a message. Only the configured
@@ -117,3 +119,15 @@ as an unauthenticated public UDP relay.
 Browser tests use deterministic message/socket fixtures. The gateway tests also
 exchange real packets between an ephemeral loopback UDP socket and a WebSocket
 client, and verify that an unapproved browser origin is refused.
+
+## Docker
+
+`docker compose up --build` serves the production build with nginx at
+`http://127.0.0.1:5178` and runs the OSC gateway in a second container
+(`ws://127.0.0.1:8787`, UDP `127.0.0.1:9001`). Both ports are published on host
+loopback only; inside the container the gateway binds `0.0.0.0` through
+`OSC_BIND_HOST` because Docker's port proxy cannot reach a container loopback.
+Outgoing OSC goes to `host.docker.internal:9000` by default; override with
+`OSC_TARGET_HOST`/`OSC_TARGET_PORT` in `.env` (see `.env.example`). Use
+`docker compose --profile dev up audiobrain-dev` for the Vite dev server and
+`--profile storybook` for Storybook, both bind-mounting the source.
