@@ -1,6 +1,6 @@
 # Control extraction plan: shared MIDI, Companion and WebSocket control
 
-**Status (2026-11-03):** steps 1 to 5 are done, plus mapping-file import/export; steps 6 and 7 are not started. See [Progress](#progress).
+**Status (2026-11-03):** steps 1 to 6 are done in code, plus mapping-file import/export. **The controller UI is incomplete** and step 7 (shared UI) is deferred, because centralized control and remote learn need research first. See [`brain-control/docs/CENTRAL_CONTROL.md`](../../brain-control/docs/CENTRAL_CONTROL.md). See [Progress](#progress).
 
 Plan for extracting VideoBrain's controller code into a reusable package that AudioBrain can also use. **Nothing has been moved yet.** This document fixes the interfaces and the order of work first. It is based on reading the code in both repos, but no extracted code has been run.
 
@@ -259,6 +259,25 @@ Options: `storageKey`, `app` (written into exported files) and an optional `stor
 
 **Pinned, not built:** generic MIDI/OSC import and export through an adapter registry and a CSV binding table, Stream Deck specifics, and the test plan: [`brain-control/docs/INTEROP_ROADMAP.md`](../../brain-control/docs/INTEROP_ROADMAP.md). **Stream Deck is confirmed as a target**; other controllers and OSC details are to be determined.
 
-### Not started
+### Done in code, UI incomplete: step 6, AudioBrain adoption
 
-Steps 6 and 7: AudioBrain adoption (implement `ControlHost` against its runtime, add a Controllers dialog and mapping files) and shared UI.
+| Piece | Where |
+| --- | --- |
+| Actions: `parameter` (absolute, set, toggle, momentary) and `transport` (play, pause, toggle, reset, panic) | `src/control/actions.ts` |
+| `ControlHost` adapter over the project store and runtime transport | `src/control/controller.ts` (`controller.initialize(runtime)`) |
+| Provisional Controllers panel, opened from a new top-bar button | `src/components/ControllersPanel.tsx` |
+| Companion default: relay on loopback port 8934 | `../brain-control/docker-compose.yml` (`CONTROL_API_KEY` enables it) |
+
+**Behavior.** Parameter actions set the saved literal through the store, so a gesture is one undo step. A parameter driven by a cable, a text parameter, a missing node and a second hold of the same parameter are all rejected. Like VideoBrain, every action needs the controller armed, including `panic`. Controller MIDI is separate from MIDI In nodes, so one input can both fire a mapping and feed a node.
+
+**Cross-app files.** Added `UnsupportedActionError` to `@brain/control/mapping`. An action that is well-formed in another app but unknown here (VideoBrain's `source`, AudioBrain's `panic`) is **skipped with a warning** and the rest of the file loads. A malformed action still rejects the whole file. VideoBrain applies the same rule. This delivers the "cross-app" item from the pinned test plan for MIDI/OSC bindings and the shared parameter and transport actions.
+
+**UI is marked incomplete** in the panel itself ("Incomplete" note, and a tooltip on the top-bar button), and in `brain-control/docs/CENTRAL_CONTROL.md`, which lists the open research questions. Nothing about the UI should be treated as the final design.
+
+**Tests added:** 13 in `actions.test.ts` (scaling and snapping, reversed ranges, enum toggle, momentary hold and restore, double-hold refusal, cable and missing-node refusal, transport, repeat suppression, one undo step per gesture, action parsing), 8 in `controller.test.ts` (MIDI CC to parameter as one undo step and only when armed, transport panic from a note, disarm on structural change, export and re-import, persistence, and **importing a file written by VideoBrain**, including a connected controller adopted by name), 5 in `ControllersPanel.test.tsx`. In `brain-control`: 4 for unsupported actions. In VideoBrain: 1 for skipped actions. AudioBrain now has 140 tests (was 114) with lint, typecheck, the parity check and the production build all passing.
+
+**Not verified:** the panel in a real browser (no screenshot or e2e run), real MIDI hardware, a Companion or Stream Deck connection to AudioBrain, and the Playwright suites. The `source` action is the only VideoBrain-only action; any others added later will also skip.
+
+### Deferred
+
+Step 7, the shared UI component, until the centralized-control research is done.
