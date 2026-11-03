@@ -54,14 +54,14 @@ describe('page-independent source presets', () => {
       expect(new Set(combined.presetOrigins!.map(origin => origin.instanceId)).size).toBe(2);
       for (const origin of combined.presetOrigins!) expect(origin.nodeIds.every(id => combined.nodes.some(node => node.id === id))).toBe(true);
       const geometry = combined.nodes.find(node => node.kind === 'lsystem.geometry')!;
-      store.getState().setParameter(geometry.id, 'angleDeg', 73);
+      store.getState().setNodeParam(geometry.id, 'angleDeg', 73);
       const widget = combined.performance.widgets[0]!;
       store.getState().moveWidget(widget.id, { ...widget.layout, x: 1 });
       const saved = parsePresetDefinition(serializePresetDefinition(graphPresetDefinition(store.getState().document)));
       const rebuilt = reconstructPreset(saved);
       expect(rebuilt).toEqual(store.getState().document);
       expect(rebuilt.presetOrigins?.[0]?.recipe).toEqual(definition.recipe);
-      store.getState().removeNode(geometry.id);
+      store.getState().deleteNode(geometry.id);
       expect(store.getState().document.presetOrigins?.[0]?.nodeIds).not.toContain(geometry.id);
       store.getState().undo(); expect(store.getState().document).toEqual(rebuilt);
     } finally { store.dispose(); }
@@ -72,7 +72,7 @@ describe('page-independent source presets', () => {
     const unsupported = structuredClone(definition);
     if (unsupported.recipe.kind !== 'morphazoid') throw new Error('Expected source preset');
     unsupported.recipe.settings = { ...unsupported.recipe.settings as object, unknownSound: 'secret' };
-    expect(() => reconstructPreset(unsupported)).toThrow('unsupported field');
+    expect(() => reconstructPreset(unsupported)).toThrow('is not supported.');
     const whitespace = structuredClone(definition);
     if (whitespace.recipe.kind !== 'morphazoid') throw new Error('Expected source preset');
     whitespace.recipe.settings = { ...whitespace.recipe.settings as object, rules: { X: ' F ' }, drawSymbols: ' F' };
@@ -85,7 +85,7 @@ describe('page-independent source presets', () => {
     try {
       const broken = structuredClone(graph);
       broken.presetOrigins![0]!.nodeIds.push('missing');
-      expect(store.getState().loadProject(broken)).toBe(false);
+      expect(store.getState().importProject(broken).ok).toBe(false);
       expect(store.getState().document).toEqual(graph);
       const original = graph.presetOrigins![0]!.recipe;
       expect(() => parsePresetDefinition({ ...definition, recipe: { ...original, source: { ...original.source, sha256: 'unverified' } } })).toThrow('fingerprint');
@@ -103,12 +103,12 @@ describe('page-independent source presets', () => {
       expect(new TextEncoder().encode(json).byteLength).toBeLessThanOrEqual(1_048_576);
       expect(parseGraphDocument(json)).toEqual(accepted);
       expect(store.getState().addInstrument(graph)).toBe(false);
-      expect(store.getState().error).toContain('1 MiB');
+      expect(store.getState().error).toContain('byte limit');
       expect(store.getState().document).toEqual(accepted);
       const oversized = await getPresetDefinition('l-system-grammars:pythagorean');
       if (oversized.recipe.kind !== 'morphazoid') throw new Error('Expected source preset');
       oversized.recipe.settings = { note: '音'.repeat(100_000) };
-      expect(() => serializePresetDefinition(oversized)).toThrow('256 KiB');
+      expect(() => serializePresetDefinition(oversized)).toThrow('262144-byte limit');
     } finally { store.dispose(); }
   });
 
@@ -122,12 +122,12 @@ describe('page-independent source presets', () => {
       expect(store.getState().error).toContain('connect');
       const saved = parsePresetDefinition(serializePresetDefinition(graphPresetDefinition(draft)));
       expect(reconstructPreset(saved)).toEqual(draft);
-      expect(store.getState().loadProject(reconstructPreset(saved))).toBe(true);
+      expect(store.getState().importProject(reconstructPreset(saved)).ok).toBe(true);
       expect(store.getState().error).toContain('connect');
       const corrupt = graphPresetDefinition(graph);
       if (corrupt.recipe.kind !== 'graph') throw new Error('Expected graph recipe');
       corrupt.recipe.graph.edges.push({ ...structuredClone(graph.edges[0]!), id: 'duplicate-route' });
-      expect(() => reconstructPreset(corrupt)).toThrow('already has a source');
+      expect(() => reconstructPreset(corrupt)).toThrow('is already connected by edge');
     } finally { store.dispose(); }
   });
 });

@@ -63,7 +63,7 @@ describe('AudioBrain controller actions', () => {
     actions.release('key');
     expect(value()).toBe(original);
     actions.execute('key', momentary, { type: 'press' });
-    store.getState().setParameter('ctl-gain', 'db', -12);
+    store.getState().setNodeParam('ctl-gain', 'db', -12);
     actions.releaseAll();
     expect(value()).toBe(-12);
   });
@@ -80,7 +80,7 @@ describe('AudioBrain controller actions', () => {
     const document = cloneGraphDocument(store.getState().document);
     document.nodes.push({ ...createNode('control.constant'), id: 'lfo' });
     document.edges.push({ id: 'edge-wired', source: { nodeId: 'lfo', portId: 'value' }, target: { nodeId: 'ctl-gain', portId: 'db' } });
-    store.getState().loadProject(document);
+    store.getState().importProject(document);
     expect(() => actions.execute('k', db, { type: 'value', value: 1 })).toThrow('Disconnect the graph input');
   });
   it('drives the transport on press only and treats toggle against the current state', () => {

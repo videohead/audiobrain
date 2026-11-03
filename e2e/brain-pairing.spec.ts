@@ -5,7 +5,7 @@ const catalog = JSON.parse(readFileSync(new URL('../contracts/operator-catalog.j
 function getDefaultParams(kind: string) {
   const definition = catalog.operators.find(operator => operator.kind === kind);
   if (!definition) throw new Error('Missing production operator');
-  return Object.fromEntries(definition.params.map(parameter => [parameter.id, parameter.default]));
+  return Object.fromEntries(Object.entries(definition.params).map(([id, parameter]) => [id, parameter.defaultValue]));
 }
 
 const companionUrl = process.env.VIDEO_BRAIN_BASE_URL;

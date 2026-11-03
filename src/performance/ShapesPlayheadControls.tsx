@@ -1,6 +1,6 @@
 import { useId } from 'react';
 import { Pin, RotateCcw } from 'lucide-react';
-import { getOperatorDefinition, type GraphDocument, type GraphNode, type ParameterDefinition } from '../graph';
+import { getOperatorDefinition, parameterList, type GraphDocument, type GraphNode, type ParameterEntry } from '../graph';
 import type { NodeSnapshot } from '../runtime/AudioBrainRuntime';
 import { useProjectStore } from '../store';
 import { ParameterControl } from '../components/ParameterControl';
@@ -27,28 +27,28 @@ export function ShapesPlayheadControls({ node, project, snapshot, compact, onPin
   const store = useProjectStore();
   const unique = useId();
   const definition = getOperatorDefinition(node.kind);
-  const parameters = new Map(definition.params.map((parameter) => [parameter.id, parameter]));
-  const savedValue = (id: string) => node.params[id] ?? parameters.get(id)?.default ?? 0;
+  const parameters = new Map(parameterList(definition).map((parameter) => [parameter.id, parameter]));
+  const savedValue = (id: string) => node.params[id] ?? parameters.get(id)?.defaultValue ?? 0;
   const liveNumber = (id: string) => snapshot?.params?.[id] ?? Number(savedValue(id));
   const wired = (id: string) => project.edges.some((edge) => edge.target.nodeId === node.id && edge.target.portId === id);
   const headParameter = parameters.get('heads');
-  const count = Math.max(1, Math.min(headParameter?.type === 'integer' ? headParameter.max : 12, Math.round(liveNumber('heads'))));
+  const count = Math.max(1, Math.min(headParameter?.type === 'number' ? headParameter.max : 12, Math.round(liveNumber('heads'))));
   const period = savedValue('motion') === 'pingpong' ? 2 : 1;
-  const setValue = (id: string, value: number | string | boolean) => store.setParameter(node.id, id, value);
+  const setValue = (id: string, value: number | string | boolean) => store.setNodeParam(node.id, id, value);
   const enumControl = (id: string, label?: string) => {
     const parameter = parameters.get(id);
-    if (parameter?.type !== 'enum') return null;
+    if (parameter?.type !== 'select') return null;
     return <label className="playhead-choice" key={id}>
       <span>{label ?? parameter.label}</span>
       <select aria-label={label ?? parameter.label} value={String(savedValue(id))} onChange={(event) => setValue(id, event.target.value)}>
-        {parameter.choices.map((choice) => <option key={choice} value={choice}>{choiceLabel[choice] ?? choice}</option>)}
+        {parameter.options.map((option) => <option key={option.value} value={option.value}>{choiceLabel[option.value] ?? option.label}</option>)}
       </select>
     </label>;
   };
   const numericControl = (id: string, label?: string) => {
     const parameter = parameters.get(id);
-    if (!parameter || (parameter.type !== 'number' && parameter.type !== 'integer')) return null;
-    const displayParameter: ParameterDefinition = label ? { ...parameter, label } : parameter;
+    if (!parameter || parameter.type !== 'number') return null;
+    const displayParameter: ParameterEntry = label ? { ...parameter, label } : parameter;
     return <ParameterControl key={id} nodeId={node.id} parameter={displayParameter} value={savedValue(id)}
       liveValue={snapshot?.params?.[id]} wired={wired(id)} onChange={(value) => setValue(id, value)}
       onBegin={store.beginGesture} onEnd={store.endGesture} compact={compact} />;
@@ -97,7 +97,7 @@ export function ShapesPlayheadControls({ node, project, snapshot, compact, onPin
             {enumControl(`head${head}Direction`, `Playhead ${head} direction`)}
             {readerType === 'line' && enumControl(`head${head}Axis`, `Playhead ${head} line axis`)}
           </div>
-          {phaseParameter && (phaseParameter.type === 'number' || phaseParameter.type === 'integer') && <label className="playhead-phase">
+          {phaseParameter && phaseParameter.type === 'number' && <label className="playhead-phase">
             <span>Relative phase <output>{(phase / period * 100).toFixed(1)}%</output></span>
             <input type="range" min={0} max={period} step={phaseParameter.step} value={Number(phase.toFixed(4))}
               aria-label={`Playhead ${head} relative phase`} aria-valuetext={`${(phase / period * 100).toFixed(1)}% of the ${period === 2 ? 'out-and-back ' : ''}reader cycle`}

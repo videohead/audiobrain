@@ -1,5 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
 
+/** Each app serves its production preview on its own port so both can run at once. */
+const port = 5178;
+
 const chromiumExecutablePath =
   process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;
 
@@ -8,7 +11,7 @@ export default defineConfig({
   fullyParallel: true,
   reporter: 'list',
   use: {
-    baseURL: 'http://127.0.0.1:5178',
+    baseURL: `http://127.0.0.1:${port}`,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     launchOptions: {
@@ -31,7 +34,7 @@ export default defineConfig({
   ],
   webServer: {
     command: 'npm run preview',
-    port: 5178,
+    port,
     reuseExistingServer: false,
   },
 });

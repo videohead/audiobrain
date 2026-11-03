@@ -1,34 +1,38 @@
+import { createAutosave, type PersistenceState } from '@brain/control/store/autosave';
+import { createHistory } from '@brain/control/store/history';
 import { useStore } from 'zustand';
 import { createStore, type StoreApi } from 'zustand/vanilla';
 import {
-  PRESETS, GRAPH_LIMITS, cloneGraphDocument, createId, createNode, getOperatorDefinition,
-  normalizeParameterValue, parseGraphDocument, parseWidgetLayout, serializeGraphDocument, tryCompileGraph, validateConnection,
-  type GraphDocument, type GraphEndpoint, type GraphPosition, type ParameterValue, type WidgetLayout, type PerformanceWidget,
+  PRESETS, GRAPH_LIMITS, cloneGraphDocument, createId, createNode, getOperatorDefinition, getParameter,
+  normalizeNodeParams, normalizeParamValue, parseGraphDocument, parseWidgetLayout, serializeGraphDocument, tryCompileGraph, validateConnection,
+  type ConnectionValidation, type GraphDocument, type GraphEndpoint, type GraphParams, type GraphPosition, type GraphParamValue, type WidgetLayout, type PerformanceWidget,
 } from '../graph';
 
 export const PROJECT_STORAGE_KEY = 'audiobrain.project.v1';
-export type PersistenceState = 'saved' | 'pending' | 'failed';
+export type { PersistenceState } from '@brain/control/store/autosave';
+export type ProjectImportResult = { ok: true } | { ok: false; error: string };
 export interface ProjectStoreState {
   document: GraphDocument;
   revision: number;
-  selection: string | null;
+  selectedNodeId: string | null;
   canUndo: boolean;
   canRedo: boolean;
   undoCount: number;
   redoCount: number;
   error: string | null;
   persistenceState: PersistenceState;
-  setParameter: (nodeId: string, paramId: string, value: ParameterValue) => void;
+  setNodeParam: (nodeId: string, paramId: string, value: GraphParamValue) => boolean;
   setTitle: (title: string) => void;
-  addNode: (kind: string, position?: GraphPosition) => string | null;
+  addNode: (kind: string, position?: GraphPosition, params?: GraphParams) => string | null;
   duplicateNode: (id: string) => string | null;
   renameNode: (id: string, label: string) => void;
-  removeNode: (id: string) => void;
-  connect: (source: GraphEndpoint, target: GraphEndpoint) => boolean;
+  deleteNode: (id: string) => void;
+  connect: (source: GraphEndpoint, target: GraphEndpoint) => ConnectionValidation;
   disconnect: (edgeId: string) => void;
   moveNode: (id: string, position: GraphPosition) => void;
   selectNode: (id: string | null) => void;
-  loadProject: (document: unknown) => boolean;
+  importProject: (value: unknown) => ProjectImportResult;
+  exportProject: () => string;
   addInstrument: (document: GraphDocument) => boolean;
   undo: () => void;
   redo: () => void;
@@ -58,24 +62,22 @@ export function createProjectStore(options: CreateProjectStoreOptions = {}): Pro
     } catch (error) { startupError = `Saved project could not be restored: ${errorMessage(error)}`; }
   }
   initial = parseGraphDocument(initial);
-  const past: GraphDocument[] = [];
-  const future: GraphDocument[] = [];
-  let gesture: { id: string; start: GraphDocument; recorded: boolean } | null = null;
-  let timer: ReturnType<typeof setTimeout> | null = null;
-  let disposed = false;
-  let schedule = (): void => {};
+  // Shared engines from @brain/control: undo/redo with gesture grouping, and debounced autosave.
+  const history = createHistory<GraphDocument>({ limit: options.historyLimit, clone: cloneGraphDocument });
+  const autosave = createAutosave({
+    save: storage ? () => { storage.setItem(PROJECT_STORAGE_KEY, serializeGraphDocument(store.getState().document)); } : null,
+    delayMs: options.autosaveDelayMs ?? 300,
+    onState: (persistenceState, message) => store.setState(message === undefined ? { persistenceState } : { persistenceState, error: `Autosave failed: ${message}` }),
+  });
   const store = createStore<ProjectStoreState>()((set, get) => {
-    const counts = () => ({ canUndo: past.length > 0, canRedo: future.length > 0, undoCount: past.length, redoCount: future.length });
+    const counts = () => history.counts();
     const diagnostic = (document: GraphDocument): string | null => { const result = tryCompileGraph(document); return result.ok ? null : result.issues.map(issue => issue.message).join('\n'); };
-    const savePast = (document: GraphDocument) => { past.push(cloneGraphDocument(document)); if (past.length > (options.historyLimit ?? 100)) past.shift(); };
-    const commit = (document: GraphDocument, selection = get().selection): boolean => {
+    const commit = (document: GraphDocument, selectedNodeId = get().selectedNodeId): boolean => {
       try {
         const normalized = parseGraphDocument(document);
-        if (JSON.stringify(normalized) === JSON.stringify(get().document)) return true;
-        if (!gesture || !gesture.recorded) { savePast(gesture?.start ?? get().document); if (gesture) gesture.recorded = true; }
-        future.length = 0;
-        set({ document: normalized, revision: get().revision + 1, selection, ...counts(), error: diagnostic(normalized), persistenceState: storage ? 'pending' : storageUnavailable ? 'failed' : 'saved' });
-        schedule(); return true;
+        if (!history.commit(get().document, normalized)) return true;
+        set({ document: normalized, revision: get().revision + 1, selectedNodeId, ...counts(), error: diagnostic(normalized), persistenceState: storage ? 'pending' : storageUnavailable ? 'failed' : 'saved' });
+        autosave.schedule(); return true;
       } catch (error) { set({ error: errorMessage(error) }); return false; }
     };
     const pin = (nodeId: string, kind: PerformanceWidget['kind'], targetId: string) => {
@@ -96,15 +98,15 @@ export function createProjectStore(options: CreateProjectStoreOptions = {}): Pro
       commit(document);
     };
     return {
-      document: initial, revision: 0, selection: null, ...counts(), error: startupError ?? diagnostic(initial), persistenceState: startupError ? 'failed' : 'saved',
-      setParameter(nodeId, paramId, value) {
+      document: initial, revision: 0, selectedNodeId: null, ...counts(), error: startupError ?? diagnostic(initial), persistenceState: startupError ? 'failed' : 'saved',
+      setNodeParam(nodeId, paramId, value) {
         try {
           const document = cloneGraphDocument(get().document);
           const node = document.nodes.find(node => node.id === nodeId);
           if (!node) throw new Error(`Missing node ${nodeId}`);
-          const parameter = getOperatorDefinition(node.kind).params.find(parameter => parameter.id === paramId);
+          const parameter = getParameter(getOperatorDefinition(node.kind), paramId);
           if (!parameter) throw new Error(`Unknown parameter ${paramId}`);
-          node.params[paramId] = normalizeParameterValue(value, parameter);
+          node.params[paramId] = normalizeParamValue(parameter, value, paramId);
           // Choosing an event mode in an older Synth patch also supplies its
           // missing optional event cable. Existing input ownership is preserved.
           if (node.kind === 'shapes.mapping' && paramId === 'playingMode' && value !== 'continuous') {
@@ -116,13 +118,14 @@ export function createProjectStore(options: CreateProjectStoreOptions = {}): Pro
               }
             }
           }
-          commit(document);
-        } catch (error) { set({ error: errorMessage(error) }); }
+          return commit(document);
+        } catch (error) { set({ error: errorMessage(error) }); return false; }
       },
       setTitle(title) { commit({ ...get().document, title }); },
-      addNode(kind, position) {
+      addNode(kind, position, params) {
         try {
           const node = createNode(kind, position ?? { x: 100 + get().document.nodes.length * 24, y: 80 + get().document.nodes.length * 24 });
+          if (params) node.params = normalizeNodeParams(kind, { ...node.params, ...params });
           return commit({ ...get().document, nodes: [...get().document.nodes, node] }, node.id) ? node.id : null;
         } catch (error) { set({ error: errorMessage(error) }); return null; }
       },
@@ -148,25 +151,25 @@ export function createProjectStore(options: CreateProjectStoreOptions = {}): Pro
         if (label.trim()) node.label = label.trim(); else delete node.label;
         commit(document);
       },
-      removeNode(id) {
+      deleteNode(id) {
         const document = cloneGraphDocument(get().document);
         document.nodes = document.nodes.filter(node => node.id !== id);
         document.edges = document.edges.filter(edge => edge.source.nodeId !== id && edge.target.nodeId !== id);
         document.performance.widgets = document.performance.widgets.filter(widget => widget.target.nodePath[0] !== id);
         if (document.presetOrigins) document.presetOrigins = document.presetOrigins.map(origin => ({ ...origin, nodeIds: origin.nodeIds.filter(nodeId => nodeId !== id) })).filter(origin => origin.nodeIds.length > 0);
         for (const node of document.nodes) if (node.viewBindings) for (const [intent, binding] of Object.entries(node.viewBindings)) if (binding.nodePath[0] === id) delete node.viewBindings[intent];
-        commit(document, get().selection === id ? null : get().selection);
+        commit(document, get().selectedNodeId === id ? null : get().selectedNodeId);
       },
       connect(source, target) {
         const validation = validateConnection(get().document, source, target);
-        if (!validation.valid) { set({ error: validation.message ?? 'Invalid connection' }); return false; }
-        return commit({ ...get().document, edges: [...get().document.edges, { id: createId('edge'), source, target }] });
+        if (!validation.valid) { set({ error: validation.message ?? 'That connection is not valid.' }); return validation; }
+        return commit({ ...get().document, edges: [...get().document.edges, { id: createId('edge'), source, target }] }) ? validation : { valid: false, message: get().error ?? 'The project could not be updated.' };
       },
       disconnect(edgeId) { commit({ ...get().document, edges: get().document.edges.filter(edge => edge.id !== edgeId) }); },
       moveNode(id, position) { commit({ ...get().document, nodes: get().document.nodes.map(node => node.id === id ? { ...node, position } : node) }); },
-      selectNode(id) { set({ selection: id === null || get().document.nodes.some(node => node.id === id) ? id : null }); },
-      loadProject(value) {
-        gesture = null;
+      selectNode(id) { set({ selectedNodeId: id === null || get().document.nodes.some(node => node.id === id) ? id : null }); },
+      importProject(value) {
+        history.endGesture();
         try {
           const document = parseGraphDocument(value);
           const result = tryCompileGraph(document);
@@ -176,9 +179,10 @@ export function createProjectStore(options: CreateProjectStoreOptions = {}): Pro
             const fatal = result.issues.filter(issue => issue.code !== 'required-input');
             if (fatal.length) throw new Error(fatal.map(issue => issue.message).join('\n'));
           }
-          return commit(document, null);
-        } catch (error) { set({ error: errorMessage(error) }); return false; }
+          return commit(document, null) ? { ok: true } : { ok: false, error: get().error ?? 'The project could not be updated' };
+        } catch (error) { const message = errorMessage(error); set({ error: message }); return { ok: false, error: message }; }
       },
+      exportProject() { return serializeGraphDocument(get().document); },
       addInstrument(source) {
         try {
           const addition = parseGraphDocument(source);
@@ -200,10 +204,10 @@ export function createProjectStore(options: CreateProjectStoreOptions = {}): Pro
           return commit(document, addition.nodes[0]?.id ?? null);
         } catch (error) { set({ error: errorMessage(error) }); return false; }
       },
-      beginGesture(id = 'gesture') { if (gesture?.id !== id) gesture = { id, start: cloneGraphDocument(get().document), recorded: false }; },
-      endGesture(id) { if (id === undefined || gesture?.id === id) gesture = null; },
-      undo() { gesture = null; const document = past.pop(); if (!document) return; future.push(cloneGraphDocument(get().document)); set({ document, revision: get().revision + 1, selection: null, ...counts(), error: diagnostic(document), persistenceState: storage ? 'pending' : storageUnavailable ? 'failed' : 'saved' }); schedule(); },
-      redo() { gesture = null; const document = future.pop(); if (!document) return; savePast(get().document); set({ document, revision: get().revision + 1, selection: null, ...counts(), error: diagnostic(document), persistenceState: storage ? 'pending' : storageUnavailable ? 'failed' : 'saved' }); schedule(); },
+      beginGesture(id) { history.beginGesture(get().document, id); },
+      endGesture(id) { history.endGesture(id); },
+      undo() { const document = history.undo(get().document); if (!document) return; set({ document, revision: get().revision + 1, selectedNodeId: null, ...counts(), error: diagnostic(document), persistenceState: storage ? 'pending' : storageUnavailable ? 'failed' : 'saved' }); autosave.schedule(); },
+      redo() { const document = history.redo(get().document); if (!document) return; set({ document, revision: get().revision + 1, selectedNodeId: null, ...counts(), error: diagnostic(document), persistenceState: storage ? 'pending' : storageUnavailable ? 'failed' : 'saved' }); autosave.schedule(); },
       pinParameter(nodeId, paramId) { pin(nodeId, 'param', paramId); },
       pinView(nodeId, viewId) { pin(nodeId, 'view', viewId); },
       removeWidget(id) { commit({ ...get().document, performance: { ...get().document.performance, widgets: get().document.performance.widgets.filter(widget => widget.id !== id) } }); },
@@ -219,16 +223,7 @@ export function createProjectStore(options: CreateProjectStoreOptions = {}): Pro
       clearError() { set({ error: null }); },
     };
   });
-  const flushPersistence = (): boolean => {
-    if (timer) { clearTimeout(timer); timer = null; }
-    if (!storage || disposed) return true;
-    try { storage.setItem(PROJECT_STORAGE_KEY, serializeGraphDocument(store.getState().document)); store.setState({ persistenceState: 'saved' }); return true; }
-    catch (error) { store.setState({ persistenceState: 'failed', error: `Autosave failed: ${errorMessage(error)}` }); return false; }
-  };
-  schedule = () => { if (timer) clearTimeout(timer); if (storage && !disposed) timer = setTimeout(flushPersistence, options.autosaveDelayMs ?? 300); };
-  const flushOnHide = () => { if (typeof document === 'undefined' || document.visibilityState === 'hidden') flushPersistence(); };
-  if (typeof window !== 'undefined') { window.addEventListener('pagehide', flushPersistence); document.addEventListener('visibilitychange', flushOnHide); }
-  return Object.assign(store, { flushPersistence, dispose() { flushPersistence(); disposed = true; if (typeof window !== 'undefined') { window.removeEventListener('pagehide', flushPersistence); document.removeEventListener('visibilitychange', flushOnHide); } } });
+  return Object.assign(store, { flushPersistence: () => autosave.flush(), dispose: () => autosave.dispose() });
 }
 export const projectStore = createProjectStore();
 export const useProjectStore = <T = ProjectStoreState>(selector: (state: ProjectStoreState) => T = (state) => state as unknown as T): T => useStore(projectStore, selector);

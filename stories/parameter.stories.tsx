@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { getOperatorDefinition } from '../src/graph';
+import { getOperatorDefinition, getParameter } from '../src/graph';
 import { ParameterControl } from '../src/components/ParameterControl';
 
-const gain = getOperatorDefinition('audio.gain').params[0]!;
+const gain = getParameter(getOperatorDefinition('audio.gain'), 'db')!;
 const meta = { title: 'Controls/Parameter', component: ParameterControl, parameters: { docs: { description: { component: 'The same registry-driven control is used in nodes, Inspector and Performance. A connected wire retains the saved literal.' } } }, args: { nodeId: 'gain', parameter: gain, value: -18, onChange: () => undefined } } satisfies Meta<typeof ParameterControl>;
 export default meta;
 type Story = StoryObj<typeof meta>;

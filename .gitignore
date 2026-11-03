@@ -1,6 +1,7 @@
 node_modules/
 dist/
 dist-mcp/
+.vitest/
 coverage/
 playwright-report/
 test-results/

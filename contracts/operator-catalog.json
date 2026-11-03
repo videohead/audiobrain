@@ -1,6 +1,6 @@
 {
   "documentType": "audiobrain.operator-catalog",
-  "schemaVersion": 1,
+  "schemaVersion": 3,
   "status": "implemented",
   "description": "Authoritative AudioBrain operator contracts. The editor, compiler, runtime and public catalog derive from this registry; browser devices require explicit session activation.",
   "limits": {
@@ -89,18 +89,17 @@
           "schemaVersion": 1
         }
       ],
-      "params": [
-        {
-          "id": "bpm",
-          "label": "Tempo",
+      "params": {
+        "bpm": {
           "type": "number",
-          "default": 120,
+          "label": "Tempo",
+          "defaultValue": 120,
           "min": 20,
           "max": 300,
           "step": 1,
           "unit": "bpm"
         }
-      ],
+      },
       "views": [],
       "demandRoot": null
     },
@@ -172,78 +171,72 @@
           "schemaVersion": 1
         }
       ],
-      "params": [
-        {
-          "id": "sides",
+      "params": {
+        "sides": {
+          "type": "number",
           "label": "Sides",
-          "type": "integer",
-          "default": 5,
+          "defaultValue": 5,
           "min": 1,
           "max": 32,
           "step": 1,
+          "integer": true,
           "unit": ""
         },
-        {
-          "id": "curvature",
-          "label": "Curvature",
+        "curvature": {
           "type": "number",
-          "default": 0,
+          "label": "Curvature",
+          "defaultValue": 0,
           "min": -1,
           "max": 1,
           "step": 0.01,
           "unit": ""
         },
-        {
-          "id": "rotationDeg",
-          "label": "Rotation",
+        "rotationDeg": {
           "type": "number",
-          "default": 0,
+          "label": "Rotation",
+          "defaultValue": 0,
           "min": -180,
           "max": 180,
           "step": 1,
-          "unit": "\u00b0"
+          "unit": "°"
         },
-        {
-          "id": "positionX",
+        "positionX": {
+          "type": "number",
           "label": "Position X",
-          "type": "number",
-          "default": 0,
+          "defaultValue": 0,
           "min": -1,
           "max": 1,
           "step": 0.01,
           "unit": ""
         },
-        {
-          "id": "positionY",
+        "positionY": {
+          "type": "number",
           "label": "Position Y",
-          "type": "number",
-          "default": 0,
+          "defaultValue": 0,
           "min": -1,
           "max": 1,
           "step": 0.01,
           "unit": ""
         },
-        {
-          "id": "aspect",
-          "label": "Aspect",
+        "aspect": {
           "type": "number",
-          "default": 0,
+          "label": "Aspect",
+          "defaultValue": 0,
           "min": -2,
           "max": 2,
           "step": 0.01,
           "unit": ""
         },
-        {
-          "id": "skew",
-          "label": "Skew",
+        "skew": {
           "type": "number",
-          "default": 0,
+          "label": "Skew",
+          "defaultValue": 0,
           "min": -2,
           "max": 2,
           "step": 0.01,
           "unit": ""
         }
-      ],
+      },
       "views": [],
       "demandRoot": null
     },
@@ -392,582 +385,838 @@
           "schemaVersion": 1
         }
       ],
-      "params": [
-        {
-          "id": "heads",
+      "params": {
+        "heads": {
+          "type": "number",
           "label": "Heads",
-          "type": "integer",
-          "default": 4,
+          "defaultValue": 4,
           "min": 1,
           "max": 12,
           "step": 1,
+          "integer": true,
           "unit": ""
         },
-        {
-          "id": "rateHz",
-          "label": "Traversal Rate",
+        "rateHz": {
           "type": "number",
-          "default": 0.12,
+          "label": "Traversal Rate",
+          "defaultValue": 0.12,
           "min": 0.01,
           "max": 2,
           "step": 0.01,
           "unit": "Hz"
         },
-        {
-          "id": "reader",
+        "reader": {
+          "type": "select",
           "label": "Reader",
-          "type": "enum",
-          "default": "points",
-          "choices": [
-            "points",
-            "line",
-            "radar"
+          "defaultValue": "points",
+          "options": [
+            {
+              "value": "points",
+              "label": "points"
+            },
+            {
+              "value": "line",
+              "label": "line"
+            },
+            {
+              "value": "radar",
+              "label": "radar"
+            }
           ]
         },
-        {
-          "id": "motion",
+        "motion": {
+          "type": "select",
           "label": "Motion",
-          "type": "enum",
-          "default": "loop",
-          "choices": [
-            "loop",
-            "pingpong"
+          "defaultValue": "loop",
+          "options": [
+            {
+              "value": "loop",
+              "label": "loop"
+            },
+            {
+              "value": "pingpong",
+              "label": "pingpong"
+            }
           ]
         },
-        {
-          "id": "direction",
+        "direction": {
+          "type": "select",
           "label": "Direction",
-          "type": "enum",
-          "default": "forward",
-          "choices": [
-            "forward",
-            "reverse"
+          "defaultValue": "forward",
+          "options": [
+            {
+              "value": "forward",
+              "label": "forward"
+            },
+            {
+              "value": "reverse",
+              "label": "reverse"
+            }
           ]
         },
-        {
-          "id": "phaseOffset",
+        "phaseOffset": {
+          "type": "number",
           "label": "Group phase",
-          "type": "number",
-          "default": 0,
+          "defaultValue": 0,
           "min": 0,
           "max": 2,
           "step": 0.001,
           "unit": "cycles"
         },
-        {
-          "id": "head1Phase",
+        "head1Phase": {
+          "type": "number",
           "label": "Head 1 phase offset",
-          "type": "number",
-          "default": 0,
+          "defaultValue": 0,
           "min": 0,
           "max": 2,
           "step": 0.001,
           "unit": "cycles"
         },
-        {
-          "id": "head1Direction",
+        "head1Direction": {
+          "type": "select",
           "label": "Head 1 direction",
-          "type": "enum",
-          "default": "forward",
-          "choices": [
-            "forward",
-            "reverse"
+          "defaultValue": "forward",
+          "options": [
+            {
+              "value": "forward",
+              "label": "forward"
+            },
+            {
+              "value": "reverse",
+              "label": "reverse"
+            }
           ]
         },
-        {
-          "id": "head1Axis",
+        "head1Axis": {
+          "type": "select",
           "label": "Head 1 line axis",
-          "type": "enum",
-          "default": "vertical",
-          "choices": [
-            "vertical",
-            "horizontal"
+          "defaultValue": "vertical",
+          "options": [
+            {
+              "value": "vertical",
+              "label": "vertical"
+            },
+            {
+              "value": "horizontal",
+              "label": "horizontal"
+            }
           ]
         },
-        {
-          "id": "head1Reader",
+        "head1Reader": {
+          "type": "select",
           "label": "Head 1 reader",
-          "type": "enum",
-          "default": "inherit",
-          "choices": [
-            "inherit",
-            "points",
-            "line",
-            "radar"
+          "defaultValue": "inherit",
+          "options": [
+            {
+              "value": "inherit",
+              "label": "inherit"
+            },
+            {
+              "value": "points",
+              "label": "points"
+            },
+            {
+              "value": "line",
+              "label": "line"
+            },
+            {
+              "value": "radar",
+              "label": "radar"
+            }
           ]
         },
-        {
-          "id": "head2Phase",
+        "head2Phase": {
+          "type": "number",
           "label": "Head 2 phase offset",
-          "type": "number",
-          "default": 0,
+          "defaultValue": 0,
           "min": 0,
           "max": 2,
           "step": 0.001,
           "unit": "cycles"
         },
-        {
-          "id": "head2Direction",
+        "head2Direction": {
+          "type": "select",
           "label": "Head 2 direction",
-          "type": "enum",
-          "default": "forward",
-          "choices": [
-            "forward",
-            "reverse"
+          "defaultValue": "forward",
+          "options": [
+            {
+              "value": "forward",
+              "label": "forward"
+            },
+            {
+              "value": "reverse",
+              "label": "reverse"
+            }
           ]
         },
-        {
-          "id": "head2Axis",
+        "head2Axis": {
+          "type": "select",
           "label": "Head 2 line axis",
-          "type": "enum",
-          "default": "vertical",
-          "choices": [
-            "vertical",
-            "horizontal"
+          "defaultValue": "vertical",
+          "options": [
+            {
+              "value": "vertical",
+              "label": "vertical"
+            },
+            {
+              "value": "horizontal",
+              "label": "horizontal"
+            }
           ]
         },
-        {
-          "id": "head2Reader",
+        "head2Reader": {
+          "type": "select",
           "label": "Head 2 reader",
-          "type": "enum",
-          "default": "inherit",
-          "choices": [
-            "inherit",
-            "points",
-            "line",
-            "radar"
+          "defaultValue": "inherit",
+          "options": [
+            {
+              "value": "inherit",
+              "label": "inherit"
+            },
+            {
+              "value": "points",
+              "label": "points"
+            },
+            {
+              "value": "line",
+              "label": "line"
+            },
+            {
+              "value": "radar",
+              "label": "radar"
+            }
           ]
         },
-        {
-          "id": "head3Phase",
+        "head3Phase": {
+          "type": "number",
           "label": "Head 3 phase offset",
-          "type": "number",
-          "default": 0,
+          "defaultValue": 0,
           "min": 0,
           "max": 2,
           "step": 0.001,
           "unit": "cycles"
         },
-        {
-          "id": "head3Direction",
+        "head3Direction": {
+          "type": "select",
           "label": "Head 3 direction",
-          "type": "enum",
-          "default": "forward",
-          "choices": [
-            "forward",
-            "reverse"
+          "defaultValue": "forward",
+          "options": [
+            {
+              "value": "forward",
+              "label": "forward"
+            },
+            {
+              "value": "reverse",
+              "label": "reverse"
+            }
           ]
         },
-        {
-          "id": "head3Axis",
+        "head3Axis": {
+          "type": "select",
           "label": "Head 3 line axis",
-          "type": "enum",
-          "default": "vertical",
-          "choices": [
-            "vertical",
-            "horizontal"
+          "defaultValue": "vertical",
+          "options": [
+            {
+              "value": "vertical",
+              "label": "vertical"
+            },
+            {
+              "value": "horizontal",
+              "label": "horizontal"
+            }
           ]
         },
-        {
-          "id": "head3Reader",
+        "head3Reader": {
+          "type": "select",
           "label": "Head 3 reader",
-          "type": "enum",
-          "default": "inherit",
-          "choices": [
-            "inherit",
-            "points",
-            "line",
-            "radar"
+          "defaultValue": "inherit",
+          "options": [
+            {
+              "value": "inherit",
+              "label": "inherit"
+            },
+            {
+              "value": "points",
+              "label": "points"
+            },
+            {
+              "value": "line",
+              "label": "line"
+            },
+            {
+              "value": "radar",
+              "label": "radar"
+            }
           ]
         },
-        {
-          "id": "head4Phase",
+        "head4Phase": {
+          "type": "number",
           "label": "Head 4 phase offset",
-          "type": "number",
-          "default": 0,
+          "defaultValue": 0,
           "min": 0,
           "max": 2,
           "step": 0.001,
           "unit": "cycles"
         },
-        {
-          "id": "head4Direction",
+        "head4Direction": {
+          "type": "select",
           "label": "Head 4 direction",
-          "type": "enum",
-          "default": "forward",
-          "choices": [
-            "forward",
-            "reverse"
+          "defaultValue": "forward",
+          "options": [
+            {
+              "value": "forward",
+              "label": "forward"
+            },
+            {
+              "value": "reverse",
+              "label": "reverse"
+            }
           ]
         },
-        {
-          "id": "head4Axis",
+        "head4Axis": {
+          "type": "select",
           "label": "Head 4 line axis",
-          "type": "enum",
-          "default": "vertical",
-          "choices": [
-            "vertical",
-            "horizontal"
+          "defaultValue": "vertical",
+          "options": [
+            {
+              "value": "vertical",
+              "label": "vertical"
+            },
+            {
+              "value": "horizontal",
+              "label": "horizontal"
+            }
           ]
         },
-        {
-          "id": "head4Reader",
+        "head4Reader": {
+          "type": "select",
           "label": "Head 4 reader",
-          "type": "enum",
-          "default": "inherit",
-          "choices": [
-            "inherit",
-            "points",
-            "line",
-            "radar"
+          "defaultValue": "inherit",
+          "options": [
+            {
+              "value": "inherit",
+              "label": "inherit"
+            },
+            {
+              "value": "points",
+              "label": "points"
+            },
+            {
+              "value": "line",
+              "label": "line"
+            },
+            {
+              "value": "radar",
+              "label": "radar"
+            }
           ]
         },
-        {
-          "id": "head5Phase",
+        "head5Phase": {
+          "type": "number",
           "label": "Head 5 phase offset",
-          "type": "number",
-          "default": 0,
+          "defaultValue": 0,
           "min": 0,
           "max": 2,
           "step": 0.001,
           "unit": "cycles"
         },
-        {
-          "id": "head5Direction",
+        "head5Direction": {
+          "type": "select",
           "label": "Head 5 direction",
-          "type": "enum",
-          "default": "forward",
-          "choices": [
-            "forward",
-            "reverse"
+          "defaultValue": "forward",
+          "options": [
+            {
+              "value": "forward",
+              "label": "forward"
+            },
+            {
+              "value": "reverse",
+              "label": "reverse"
+            }
           ]
         },
-        {
-          "id": "head5Axis",
+        "head5Axis": {
+          "type": "select",
           "label": "Head 5 line axis",
-          "type": "enum",
-          "default": "vertical",
-          "choices": [
-            "vertical",
-            "horizontal"
+          "defaultValue": "vertical",
+          "options": [
+            {
+              "value": "vertical",
+              "label": "vertical"
+            },
+            {
+              "value": "horizontal",
+              "label": "horizontal"
+            }
           ]
         },
-        {
-          "id": "head5Reader",
+        "head5Reader": {
+          "type": "select",
           "label": "Head 5 reader",
-          "type": "enum",
-          "default": "inherit",
-          "choices": [
-            "inherit",
-            "points",
-            "line",
-            "radar"
+          "defaultValue": "inherit",
+          "options": [
+            {
+              "value": "inherit",
+              "label": "inherit"
+            },
+            {
+              "value": "points",
+              "label": "points"
+            },
+            {
+              "value": "line",
+              "label": "line"
+            },
+            {
+              "value": "radar",
+              "label": "radar"
+            }
           ]
         },
-        {
-          "id": "head6Phase",
+        "head6Phase": {
+          "type": "number",
           "label": "Head 6 phase offset",
-          "type": "number",
-          "default": 0,
+          "defaultValue": 0,
           "min": 0,
           "max": 2,
           "step": 0.001,
           "unit": "cycles"
         },
-        {
-          "id": "head6Direction",
+        "head6Direction": {
+          "type": "select",
           "label": "Head 6 direction",
-          "type": "enum",
-          "default": "forward",
-          "choices": [
-            "forward",
-            "reverse"
+          "defaultValue": "forward",
+          "options": [
+            {
+              "value": "forward",
+              "label": "forward"
+            },
+            {
+              "value": "reverse",
+              "label": "reverse"
+            }
           ]
         },
-        {
-          "id": "head6Axis",
+        "head6Axis": {
+          "type": "select",
           "label": "Head 6 line axis",
-          "type": "enum",
-          "default": "vertical",
-          "choices": [
-            "vertical",
-            "horizontal"
+          "defaultValue": "vertical",
+          "options": [
+            {
+              "value": "vertical",
+              "label": "vertical"
+            },
+            {
+              "value": "horizontal",
+              "label": "horizontal"
+            }
           ]
         },
-        {
-          "id": "head6Reader",
+        "head6Reader": {
+          "type": "select",
           "label": "Head 6 reader",
-          "type": "enum",
-          "default": "inherit",
-          "choices": [
-            "inherit",
-            "points",
-            "line",
-            "radar"
+          "defaultValue": "inherit",
+          "options": [
+            {
+              "value": "inherit",
+              "label": "inherit"
+            },
+            {
+              "value": "points",
+              "label": "points"
+            },
+            {
+              "value": "line",
+              "label": "line"
+            },
+            {
+              "value": "radar",
+              "label": "radar"
+            }
           ]
         },
-        {
-          "id": "head7Phase",
+        "head7Phase": {
+          "type": "number",
           "label": "Head 7 phase offset",
-          "type": "number",
-          "default": 0,
+          "defaultValue": 0,
           "min": 0,
           "max": 2,
           "step": 0.001,
           "unit": "cycles"
         },
-        {
-          "id": "head7Direction",
+        "head7Direction": {
+          "type": "select",
           "label": "Head 7 direction",
-          "type": "enum",
-          "default": "forward",
-          "choices": [
-            "forward",
-            "reverse"
+          "defaultValue": "forward",
+          "options": [
+            {
+              "value": "forward",
+              "label": "forward"
+            },
+            {
+              "value": "reverse",
+              "label": "reverse"
+            }
           ]
         },
-        {
-          "id": "head7Axis",
+        "head7Axis": {
+          "type": "select",
           "label": "Head 7 line axis",
-          "type": "enum",
-          "default": "vertical",
-          "choices": [
-            "vertical",
-            "horizontal"
+          "defaultValue": "vertical",
+          "options": [
+            {
+              "value": "vertical",
+              "label": "vertical"
+            },
+            {
+              "value": "horizontal",
+              "label": "horizontal"
+            }
           ]
         },
-        {
-          "id": "head7Reader",
+        "head7Reader": {
+          "type": "select",
           "label": "Head 7 reader",
-          "type": "enum",
-          "default": "inherit",
-          "choices": [
-            "inherit",
-            "points",
-            "line",
-            "radar"
+          "defaultValue": "inherit",
+          "options": [
+            {
+              "value": "inherit",
+              "label": "inherit"
+            },
+            {
+              "value": "points",
+              "label": "points"
+            },
+            {
+              "value": "line",
+              "label": "line"
+            },
+            {
+              "value": "radar",
+              "label": "radar"
+            }
           ]
         },
-        {
-          "id": "head8Phase",
+        "head8Phase": {
+          "type": "number",
           "label": "Head 8 phase offset",
-          "type": "number",
-          "default": 0,
+          "defaultValue": 0,
           "min": 0,
           "max": 2,
           "step": 0.001,
           "unit": "cycles"
         },
-        {
-          "id": "head8Direction",
+        "head8Direction": {
+          "type": "select",
           "label": "Head 8 direction",
-          "type": "enum",
-          "default": "forward",
-          "choices": [
-            "forward",
-            "reverse"
+          "defaultValue": "forward",
+          "options": [
+            {
+              "value": "forward",
+              "label": "forward"
+            },
+            {
+              "value": "reverse",
+              "label": "reverse"
+            }
           ]
         },
-        {
-          "id": "head8Axis",
+        "head8Axis": {
+          "type": "select",
           "label": "Head 8 line axis",
-          "type": "enum",
-          "default": "vertical",
-          "choices": [
-            "vertical",
-            "horizontal"
+          "defaultValue": "vertical",
+          "options": [
+            {
+              "value": "vertical",
+              "label": "vertical"
+            },
+            {
+              "value": "horizontal",
+              "label": "horizontal"
+            }
           ]
         },
-        {
-          "id": "head8Reader",
+        "head8Reader": {
+          "type": "select",
           "label": "Head 8 reader",
-          "type": "enum",
-          "default": "inherit",
-          "choices": [
-            "inherit",
-            "points",
-            "line",
-            "radar"
+          "defaultValue": "inherit",
+          "options": [
+            {
+              "value": "inherit",
+              "label": "inherit"
+            },
+            {
+              "value": "points",
+              "label": "points"
+            },
+            {
+              "value": "line",
+              "label": "line"
+            },
+            {
+              "value": "radar",
+              "label": "radar"
+            }
           ]
         },
-        {
-          "id": "head9Phase",
+        "head9Phase": {
+          "type": "number",
           "label": "Head 9 phase offset",
-          "type": "number",
-          "default": 0,
+          "defaultValue": 0,
           "min": 0,
           "max": 2,
           "step": 0.001,
           "unit": "cycles"
         },
-        {
-          "id": "head9Direction",
+        "head9Direction": {
+          "type": "select",
           "label": "Head 9 direction",
-          "type": "enum",
-          "default": "forward",
-          "choices": [
-            "forward",
-            "reverse"
+          "defaultValue": "forward",
+          "options": [
+            {
+              "value": "forward",
+              "label": "forward"
+            },
+            {
+              "value": "reverse",
+              "label": "reverse"
+            }
           ]
         },
-        {
-          "id": "head9Axis",
+        "head9Axis": {
+          "type": "select",
           "label": "Head 9 line axis",
-          "type": "enum",
-          "default": "vertical",
-          "choices": [
-            "vertical",
-            "horizontal"
+          "defaultValue": "vertical",
+          "options": [
+            {
+              "value": "vertical",
+              "label": "vertical"
+            },
+            {
+              "value": "horizontal",
+              "label": "horizontal"
+            }
           ]
         },
-        {
-          "id": "head9Reader",
+        "head9Reader": {
+          "type": "select",
           "label": "Head 9 reader",
-          "type": "enum",
-          "default": "inherit",
-          "choices": [
-            "inherit",
-            "points",
-            "line",
-            "radar"
+          "defaultValue": "inherit",
+          "options": [
+            {
+              "value": "inherit",
+              "label": "inherit"
+            },
+            {
+              "value": "points",
+              "label": "points"
+            },
+            {
+              "value": "line",
+              "label": "line"
+            },
+            {
+              "value": "radar",
+              "label": "radar"
+            }
           ]
         },
-        {
-          "id": "head10Phase",
+        "head10Phase": {
+          "type": "number",
           "label": "Head 10 phase offset",
-          "type": "number",
-          "default": 0,
+          "defaultValue": 0,
           "min": 0,
           "max": 2,
           "step": 0.001,
           "unit": "cycles"
         },
-        {
-          "id": "head10Direction",
+        "head10Direction": {
+          "type": "select",
           "label": "Head 10 direction",
-          "type": "enum",
-          "default": "forward",
-          "choices": [
-            "forward",
-            "reverse"
+          "defaultValue": "forward",
+          "options": [
+            {
+              "value": "forward",
+              "label": "forward"
+            },
+            {
+              "value": "reverse",
+              "label": "reverse"
+            }
           ]
         },
-        {
-          "id": "head10Axis",
+        "head10Axis": {
+          "type": "select",
           "label": "Head 10 line axis",
-          "type": "enum",
-          "default": "vertical",
-          "choices": [
-            "vertical",
-            "horizontal"
+          "defaultValue": "vertical",
+          "options": [
+            {
+              "value": "vertical",
+              "label": "vertical"
+            },
+            {
+              "value": "horizontal",
+              "label": "horizontal"
+            }
           ]
         },
-        {
-          "id": "head10Reader",
+        "head10Reader": {
+          "type": "select",
           "label": "Head 10 reader",
-          "type": "enum",
-          "default": "inherit",
-          "choices": [
-            "inherit",
-            "points",
-            "line",
-            "radar"
+          "defaultValue": "inherit",
+          "options": [
+            {
+              "value": "inherit",
+              "label": "inherit"
+            },
+            {
+              "value": "points",
+              "label": "points"
+            },
+            {
+              "value": "line",
+              "label": "line"
+            },
+            {
+              "value": "radar",
+              "label": "radar"
+            }
           ]
         },
-        {
-          "id": "head11Phase",
+        "head11Phase": {
+          "type": "number",
           "label": "Head 11 phase offset",
-          "type": "number",
-          "default": 0,
+          "defaultValue": 0,
           "min": 0,
           "max": 2,
           "step": 0.001,
           "unit": "cycles"
         },
-        {
-          "id": "head11Direction",
+        "head11Direction": {
+          "type": "select",
           "label": "Head 11 direction",
-          "type": "enum",
-          "default": "forward",
-          "choices": [
-            "forward",
-            "reverse"
+          "defaultValue": "forward",
+          "options": [
+            {
+              "value": "forward",
+              "label": "forward"
+            },
+            {
+              "value": "reverse",
+              "label": "reverse"
+            }
           ]
         },
-        {
-          "id": "head11Axis",
+        "head11Axis": {
+          "type": "select",
           "label": "Head 11 line axis",
-          "type": "enum",
-          "default": "vertical",
-          "choices": [
-            "vertical",
-            "horizontal"
+          "defaultValue": "vertical",
+          "options": [
+            {
+              "value": "vertical",
+              "label": "vertical"
+            },
+            {
+              "value": "horizontal",
+              "label": "horizontal"
+            }
           ]
         },
-        {
-          "id": "head11Reader",
+        "head11Reader": {
+          "type": "select",
           "label": "Head 11 reader",
-          "type": "enum",
-          "default": "inherit",
-          "choices": [
-            "inherit",
-            "points",
-            "line",
-            "radar"
+          "defaultValue": "inherit",
+          "options": [
+            {
+              "value": "inherit",
+              "label": "inherit"
+            },
+            {
+              "value": "points",
+              "label": "points"
+            },
+            {
+              "value": "line",
+              "label": "line"
+            },
+            {
+              "value": "radar",
+              "label": "radar"
+            }
           ]
         },
-        {
-          "id": "head12Phase",
-          "label": "Head 12 phase offset",
+        "head12Phase": {
           "type": "number",
-          "default": 0,
+          "label": "Head 12 phase offset",
+          "defaultValue": 0,
           "min": 0,
           "max": 2,
           "step": 0.001,
           "unit": "cycles"
         },
-        {
-          "id": "head12Direction",
+        "head12Direction": {
+          "type": "select",
           "label": "Head 12 direction",
-          "type": "enum",
-          "default": "forward",
-          "choices": [
-            "forward",
-            "reverse"
+          "defaultValue": "forward",
+          "options": [
+            {
+              "value": "forward",
+              "label": "forward"
+            },
+            {
+              "value": "reverse",
+              "label": "reverse"
+            }
           ]
         },
-        {
-          "id": "head12Axis",
+        "head12Axis": {
+          "type": "select",
           "label": "Head 12 line axis",
-          "type": "enum",
-          "default": "vertical",
-          "choices": [
-            "vertical",
-            "horizontal"
+          "defaultValue": "vertical",
+          "options": [
+            {
+              "value": "vertical",
+              "label": "vertical"
+            },
+            {
+              "value": "horizontal",
+              "label": "horizontal"
+            }
           ]
         },
-        {
-          "id": "head12Reader",
+        "head12Reader": {
+          "type": "select",
           "label": "Head 12 reader",
-          "type": "enum",
-          "default": "inherit",
-          "choices": [
-            "inherit",
-            "points",
-            "line",
-            "radar"
+          "defaultValue": "inherit",
+          "options": [
+            {
+              "value": "inherit",
+              "label": "inherit"
+            },
+            {
+              "value": "points",
+              "label": "points"
+            },
+            {
+              "value": "line",
+              "label": "line"
+            },
+            {
+              "value": "radar",
+              "label": "radar"
+            }
           ]
         },
-        {
-          "id": "divisions",
+        "divisions": {
+          "type": "number",
           "label": "Trigger divisions",
-          "type": "integer",
-          "default": 2,
+          "defaultValue": 2,
           "min": 1,
           "max": 16,
-          "step": 1
+          "step": 1,
+          "integer": true
         }
-      ],
+      },
       "views": [
         {
           "id": "playheads",
@@ -1051,97 +1300,113 @@
           "schemaVersion": 1
         }
       ],
-      "params": [
-        {
-          "id": "rootHz",
-          "label": "Root Frequency",
+      "params": {
+        "rootHz": {
           "type": "number",
-          "default": 110,
+          "label": "Root Frequency",
+          "defaultValue": 110,
           "min": 20,
           "max": 440,
           "step": 1,
           "unit": "Hz"
         },
-        {
-          "id": "rangeOctaves",
-          "label": "Pitch Range",
+        "rangeOctaves": {
           "type": "number",
-          "default": 2,
+          "label": "Pitch Range",
+          "defaultValue": 2,
           "min": 0,
           "max": 7,
           "step": 0.1,
           "unit": "octaves"
         },
-        {
-          "id": "playingMode",
+        "playingMode": {
+          "type": "select",
           "label": "Sound mode",
-          "type": "enum",
-          "default": "continuous",
-          "choices": [
-            "continuous",
-            "notes",
-            "triggers"
+          "defaultValue": "continuous",
+          "options": [
+            {
+              "value": "continuous",
+              "label": "continuous"
+            },
+            {
+              "value": "notes",
+              "label": "notes"
+            },
+            {
+              "value": "triggers",
+              "label": "triggers"
+            }
           ]
         },
-        {
-          "id": "triggerMapping",
+        "triggerMapping": {
+          "type": "select",
           "label": "Drum mapping",
-          "type": "enum",
-          "default": "feature",
-          "choices": [
-            "feature",
-            "position",
-            "incidence"
+          "defaultValue": "feature",
+          "options": [
+            {
+              "value": "feature",
+              "label": "feature"
+            },
+            {
+              "value": "position",
+              "label": "position"
+            },
+            {
+              "value": "incidence",
+              "label": "incidence"
+            }
           ]
         },
-        {
-          "id": "tuningDepth",
-          "label": "Drum tuning depth",
+        "tuningDepth": {
           "type": "number",
-          "default": 12,
+          "label": "Drum tuning depth",
+          "defaultValue": 12,
           "min": 0,
           "max": 24,
           "step": 1,
           "unit": "st"
         },
-        {
-          "id": "triggerCharacter",
-          "label": "Drum character",
+        "triggerCharacter": {
           "type": "number",
-          "default": 0.7,
+          "label": "Drum character",
+          "defaultValue": 0.7,
           "min": 0,
           "max": 1,
           "step": 0.01
         },
-        {
-          "id": "hitCap",
+        "hitCap": {
+          "type": "number",
           "label": "Simultaneous hits",
-          "type": "integer",
-          "default": 6,
+          "defaultValue": 6,
           "min": 1,
           "max": 32,
-          "step": 1
+          "step": 1,
+          "integer": true
         },
-        {
-          "id": "pitchMapping",
+        "pitchMapping": {
+          "type": "select",
           "label": "Pitch mapping",
-          "type": "enum",
-          "default": "shape",
-          "choices": [
-            "shape",
-            "centered"
+          "defaultValue": "shape",
+          "options": [
+            {
+              "value": "shape",
+              "label": "shape"
+            },
+            {
+              "value": "centered",
+              "label": "centered"
+            }
           ]
         },
-        {
-          "id": "noteCharacter",
-          "label": "Note character",
+        "noteCharacter": {
           "type": "number",
-          "default": 0.35,
+          "label": "Note character",
+          "defaultValue": 0.35,
           "min": 0,
           "max": 1,
           "step": 0.01
         }
-      ],
+      },
       "views": [],
       "demandRoot": null
     },
@@ -1185,18 +1450,17 @@
           "schemaVersion": 1
         }
       ],
-      "params": [
-        {
-          "id": "character",
-          "label": "Character",
+      "params": {
+        "character": {
           "type": "number",
-          "default": 0.35,
+          "label": "Character",
+          "defaultValue": 0.35,
           "min": 0,
           "max": 1,
           "step": 0.01,
           "unit": ""
         }
-      ],
+      },
       "views": [],
       "demandRoot": null
     },
@@ -1226,32 +1490,30 @@
           "schemaVersion": 1
         }
       ],
-      "params": [
-        {
-          "id": "axiom",
+      "params": {
+        "axiom": {
+          "type": "string",
           "label": "Axiom",
-          "type": "text",
-          "default": "FX",
+          "defaultValue": "FX",
           "maxLength": 128
         },
-        {
-          "id": "rules",
+        "rules": {
+          "type": "string",
           "label": "Production Rules",
-          "type": "text",
-          "default": "X -> >[-FX]+FX<",
+          "defaultValue": "X -> >[-FX]+FX<",
           "maxLength": 2048
         },
-        {
-          "id": "iterations",
+        "iterations": {
+          "type": "number",
           "label": "Iterations",
-          "type": "integer",
-          "default": 5,
+          "defaultValue": 5,
           "min": 0,
           "max": 15,
           "step": 1,
+          "integer": true,
           "unit": ""
         }
-      ],
+      },
       "views": [],
       "demandRoot": null
     },
@@ -1302,51 +1564,46 @@
           "schemaVersion": 1
         }
       ],
-      "params": [
-        {
-          "id": "angleDeg",
-          "label": "Branch Angle",
+      "params": {
+        "angleDeg": {
           "type": "number",
-          "default": 45,
+          "label": "Branch Angle",
+          "defaultValue": 45,
           "min": 0,
           "max": 180,
           "step": 1,
           "unit": "degrees"
         },
-        {
-          "id": "lengthScale",
-          "label": "Length Scale",
+        "lengthScale": {
           "type": "number",
-          "default": 0.72,
+          "label": "Length Scale",
+          "defaultValue": 0.72,
           "min": 0.1,
           "max": 1,
           "step": 0.01,
           "unit": ""
         },
-        {
-          "id": "drawSymbols",
+        "drawSymbols": {
+          "type": "string",
           "label": "Draw symbols",
-          "type": "text",
-          "default": "F",
+          "defaultValue": "F",
           "maxLength": 32
         },
-        {
-          "id": "moveSymbols",
+        "moveSymbols": {
+          "type": "string",
           "label": "Move symbols",
-          "type": "text",
-          "default": "",
+          "defaultValue": "",
           "maxLength": 32
         },
-        {
-          "id": "turnAsymmetry",
-          "label": "Turn asymmetry",
+        "turnAsymmetry": {
           "type": "number",
-          "default": 0,
+          "label": "Turn asymmetry",
+          "defaultValue": 0,
           "min": -0.8,
           "max": 0.8,
           "step": 0.01
         }
-      ],
+      },
       "views": [],
       "demandRoot": null
     },
@@ -1390,18 +1647,17 @@
           "schemaVersion": 1
         }
       ],
-      "params": [
-        {
-          "id": "speed",
-          "label": "Traversal Speed",
+      "params": {
+        "speed": {
           "type": "number",
-          "default": 0.5,
+          "label": "Traversal Speed",
+          "defaultValue": 0.5,
           "min": 0.05,
           "max": 4,
           "step": 0.05,
           "unit": "traversals/s"
         }
-      ],
+      },
       "views": [],
       "demandRoot": null
     },
@@ -1445,28 +1701,26 @@
           "schemaVersion": 1
         }
       ],
-      "params": [
-        {
-          "id": "rootHz",
-          "label": "Root Frequency",
+      "params": {
+        "rootHz": {
           "type": "number",
-          "default": 110,
+          "label": "Root Frequency",
+          "defaultValue": 110,
           "min": 20,
           "max": 440,
           "step": 1,
           "unit": "Hz"
         },
-        {
-          "id": "semitonesPerTurn",
-          "label": "Pitch per Turn",
+        "semitonesPerTurn": {
           "type": "number",
-          "default": 12,
+          "label": "Pitch per Turn",
+          "defaultValue": 12,
           "min": -24,
           "max": 24,
           "step": 1,
           "unit": "semitones/turn"
         }
-      ],
+      },
       "views": [],
       "demandRoot": null
     },
@@ -1496,7 +1750,7 @@
           "schemaVersion": 1
         }
       ],
-      "params": [],
+      "params": {},
       "views": [],
       "demandRoot": null
     },
@@ -1554,75 +1808,106 @@
           "schemaVersion": 1
         }
       ],
-      "params": [
-        {
-          "id": "topology",
+      "params": {
+        "topology": {
+          "type": "select",
           "label": "Topology",
-          "type": "enum",
-          "default": "layered",
-          "choices": [
-            "layered",
-            "chain",
-            "tree",
-            "dag",
-            "bipartite",
-            "ring",
-            "smallworld",
-            "hub",
-            "mesh",
-            "modular",
-            "random"
+          "defaultValue": "layered",
+          "options": [
+            {
+              "value": "layered",
+              "label": "layered"
+            },
+            {
+              "value": "chain",
+              "label": "chain"
+            },
+            {
+              "value": "tree",
+              "label": "tree"
+            },
+            {
+              "value": "dag",
+              "label": "dag"
+            },
+            {
+              "value": "bipartite",
+              "label": "bipartite"
+            },
+            {
+              "value": "ring",
+              "label": "ring"
+            },
+            {
+              "value": "smallworld",
+              "label": "smallworld"
+            },
+            {
+              "value": "hub",
+              "label": "hub"
+            },
+            {
+              "value": "mesh",
+              "label": "mesh"
+            },
+            {
+              "value": "modular",
+              "label": "modular"
+            },
+            {
+              "value": "random",
+              "label": "random"
+            }
           ]
         },
-        {
-          "id": "layers",
+        "layers": {
+          "type": "number",
           "label": "Layers",
-          "type": "integer",
-          "default": 4,
+          "defaultValue": 4,
           "min": 2,
           "max": 8,
           "step": 1,
+          "integer": true,
           "unit": ""
         },
-        {
-          "id": "nodesPerLayer",
+        "nodesPerLayer": {
+          "type": "number",
           "label": "Nodes per Layer",
-          "type": "integer",
-          "default": 3,
+          "defaultValue": 3,
           "min": 1,
           "max": 8,
           "step": 1,
+          "integer": true,
           "unit": ""
         },
-        {
-          "id": "seed",
+        "seed": {
+          "type": "number",
           "label": "Seed",
-          "type": "integer",
-          "default": 17,
+          "defaultValue": 17,
           "min": 0,
           "max": 4294967295,
           "step": 1,
+          "integer": true,
           "unit": ""
         },
-        {
-          "id": "nodeCount",
+        "nodeCount": {
+          "type": "number",
           "label": "Node count",
-          "type": "integer",
-          "default": 12,
+          "defaultValue": 12,
           "min": 3,
           "max": 32,
-          "step": 1
+          "step": 1,
+          "integer": true
         },
-        {
-          "id": "density",
-          "label": "Density",
+        "density": {
           "type": "number",
-          "default": 0.36,
+          "label": "Density",
+          "defaultValue": 0.36,
           "min": 0,
           "max": 1,
           "step": 0.01
         }
-      ],
+      },
       "views": [],
       "demandRoot": null
     },
@@ -1666,18 +1951,17 @@
           "schemaVersion": 1
         }
       ],
-      "params": [
-        {
-          "id": "edgeSeconds",
-          "label": "Edge Duration",
+      "params": {
+        "edgeSeconds": {
           "type": "number",
-          "default": 0.15,
+          "label": "Edge Duration",
+          "defaultValue": 0.15,
           "min": 0.01,
           "max": 1,
           "step": 0.01,
           "unit": "s/normalized-distance"
         }
-      ],
+      },
       "views": [],
       "demandRoot": null
     },
@@ -1721,28 +2005,26 @@
           "schemaVersion": 1
         }
       ],
-      "params": [
-        {
-          "id": "rootHz",
-          "label": "Root Frequency",
+      "params": {
+        "rootHz": {
           "type": "number",
-          "default": 220,
+          "label": "Root Frequency",
+          "defaultValue": 220,
           "min": 20,
           "max": 440,
           "step": 1,
           "unit": "Hz"
         },
-        {
-          "id": "semitonesPerTurn",
-          "label": "Pitch per Turn",
+        "semitonesPerTurn": {
           "type": "number",
-          "default": 12,
+          "label": "Pitch per Turn",
+          "defaultValue": 12,
           "min": -24,
           "max": 24,
           "step": 1,
           "unit": "semitones/turn"
         }
-      ],
+      },
       "views": [],
       "demandRoot": null
     },
@@ -1779,18 +2061,17 @@
           "schemaVersion": 1
         }
       ],
-      "params": [
-        {
-          "id": "decay",
-          "label": "Decay",
+      "params": {
+        "decay": {
           "type": "number",
-          "default": 0.6,
+          "label": "Decay",
+          "defaultValue": 0.6,
           "min": 0.02,
           "max": 4,
           "step": 0.01,
           "unit": "seconds"
         }
-      ],
+      },
       "views": [],
       "demandRoot": null
     },
@@ -1827,18 +2108,17 @@
           "schemaVersion": 1
         }
       ],
-      "params": [
-        {
-          "id": "db",
-          "label": "Gain",
+      "params": {
+        "db": {
           "type": "number",
-          "default": -18,
+          "label": "Gain",
+          "defaultValue": -18,
           "min": -60,
           "max": 0,
           "step": 0.5,
           "unit": "dB"
         }
-      ],
+      },
       "views": [],
       "demandRoot": null
     },
@@ -1861,7 +2141,7 @@
         }
       ],
       "outputs": [],
-      "params": [],
+      "params": {},
       "views": [],
       "demandRoot": "audio-output"
     },
@@ -1891,7 +2171,7 @@
           "schemaVersion": 1
         }
       ],
-      "params": [],
+      "params": {},
       "views": [],
       "demandRoot": "monitor"
     },
@@ -1921,7 +2201,7 @@
         }
       ],
       "outputs": [],
-      "params": [],
+      "params": {},
       "views": [
         {
           "id": "contour",
@@ -1983,7 +2263,7 @@
         }
       ],
       "outputs": [],
-      "params": [],
+      "params": {},
       "views": [
         {
           "id": "path",
@@ -2025,7 +2305,7 @@
         }
       ],
       "outputs": [],
-      "params": [],
+      "params": {},
       "views": [
         {
           "id": "graph",
@@ -2081,39 +2361,45 @@
           "schemaVersion": 1
         }
       ],
-      "params": [
-        {
-          "id": "frequency",
-          "label": "Frequency",
+      "params": {
+        "frequency": {
           "type": "number",
-          "default": 1200,
+          "label": "Frequency",
+          "defaultValue": 1200,
           "min": 20,
           "max": 20000,
           "step": 1,
           "unit": "Hz"
         },
-        {
-          "id": "q",
-          "label": "Q",
+        "q": {
           "type": "number",
-          "default": 0.7,
+          "label": "Q",
+          "defaultValue": 0.7,
           "min": 0.1,
           "max": 30,
           "step": 0.1,
           "unit": ""
         },
-        {
-          "id": "type",
+        "type": {
+          "type": "select",
           "label": "Type",
-          "type": "enum",
-          "default": "lowpass",
-          "choices": [
-            "lowpass",
-            "highpass",
-            "bandpass"
+          "defaultValue": "lowpass",
+          "options": [
+            {
+              "value": "lowpass",
+              "label": "lowpass"
+            },
+            {
+              "value": "highpass",
+              "label": "highpass"
+            },
+            {
+              "value": "bandpass",
+              "label": "bandpass"
+            }
           ]
         }
-      ],
+      },
       "views": [],
       "demandRoot": null
     },
@@ -2164,38 +2450,35 @@
           "schemaVersion": 1
         }
       ],
-      "params": [
-        {
-          "id": "seconds",
-          "label": "Seconds",
+      "params": {
+        "seconds": {
           "type": "number",
-          "default": 0.25,
+          "label": "Seconds",
+          "defaultValue": 0.25,
           "min": 0,
           "max": 2,
           "step": 0.01,
           "unit": "s"
         },
-        {
-          "id": "feedback",
-          "label": "Feedback",
+        "feedback": {
           "type": "number",
-          "default": 0.25,
+          "label": "Feedback",
+          "defaultValue": 0.25,
           "min": 0,
           "max": 0.9,
           "step": 0.01,
           "unit": ""
         },
-        {
-          "id": "mix",
-          "label": "Mix",
+        "mix": {
           "type": "number",
-          "default": 0.25,
+          "label": "Mix",
+          "defaultValue": 0.25,
           "min": 0,
           "max": 1,
           "step": 0.01,
           "unit": ""
         }
-      ],
+      },
       "views": [],
       "demandRoot": null
     },
@@ -2232,18 +2515,17 @@
           "schemaVersion": 1
         }
       ],
-      "params": [
-        {
-          "id": "pan",
-          "label": "Pan",
+      "params": {
+        "pan": {
           "type": "number",
-          "default": 0,
+          "label": "Pan",
+          "defaultValue": 0,
           "min": -1,
           "max": 1,
           "step": 0.01,
           "unit": ""
         }
-      ],
+      },
       "views": [],
       "demandRoot": null
     },
@@ -2273,30 +2555,40 @@
           "schemaVersion": 1
         }
       ],
-      "params": [
-        {
-          "id": "frequency",
-          "label": "Frequency",
+      "params": {
+        "frequency": {
           "type": "number",
-          "default": 220,
+          "label": "Frequency",
+          "defaultValue": 220,
           "min": 20,
           "max": 20000,
           "step": 1,
           "unit": "Hz"
         },
-        {
-          "id": "waveform",
+        "waveform": {
+          "type": "select",
           "label": "Waveform",
-          "type": "enum",
-          "default": "sine",
-          "choices": [
-            "sine",
-            "triangle",
-            "sawtooth",
-            "square"
+          "defaultValue": "sine",
+          "options": [
+            {
+              "value": "sine",
+              "label": "sine"
+            },
+            {
+              "value": "triangle",
+              "label": "triangle"
+            },
+            {
+              "value": "sawtooth",
+              "label": "sawtooth"
+            },
+            {
+              "value": "square",
+              "label": "square"
+            }
           ]
         }
-      ],
+      },
       "views": [],
       "demandRoot": null
     },
@@ -2326,18 +2618,17 @@
           "schemaVersion": 1
         }
       ],
-      "params": [
-        {
-          "id": "value",
-          "label": "Value",
+      "params": {
+        "value": {
           "type": "number",
-          "default": 0.5,
+          "label": "Value",
+          "defaultValue": 0.5,
           "min": -20000,
           "max": 20000,
           "step": 0.01,
           "unit": ""
         }
-      ],
+      },
       "views": [],
       "demandRoot": null
     },
@@ -2395,48 +2686,44 @@
           "schemaVersion": 1
         }
       ],
-      "params": [
-        {
-          "id": "inMin",
+      "params": {
+        "inMin": {
+          "type": "number",
           "label": "Inmin",
-          "type": "number",
-          "default": 0,
+          "defaultValue": 0,
           "min": -20000,
           "max": 20000,
           "step": 0.01,
           "unit": ""
         },
-        {
-          "id": "inMax",
+        "inMax": {
+          "type": "number",
           "label": "Inmax",
-          "type": "number",
-          "default": 1,
+          "defaultValue": 1,
           "min": -20000,
           "max": 20000,
           "step": 0.01,
           "unit": ""
         },
-        {
-          "id": "outMin",
+        "outMin": {
+          "type": "number",
           "label": "Outmin",
-          "type": "number",
-          "default": 0,
+          "defaultValue": 0,
           "min": -20000,
           "max": 20000,
           "step": 0.01,
           "unit": ""
         },
-        {
-          "id": "outMax",
-          "label": "Outmax",
+        "outMax": {
           "type": "number",
-          "default": 1,
+          "label": "Outmax",
+          "defaultValue": 1,
           "min": -20000,
           "max": 20000,
           "step": 0.01,
           "unit": ""
         }
-      ],
+      },
       "views": [],
       "demandRoot": null
     },
@@ -2480,38 +2767,35 @@
           "schemaVersion": 1
         }
       ],
-      "params": [
-        {
-          "id": "rateHz",
-          "label": "Ratehz",
+      "params": {
+        "rateHz": {
           "type": "number",
-          "default": 0.25,
+          "label": "Ratehz",
+          "defaultValue": 0.25,
           "min": 0.01,
           "max": 20,
           "step": 0.01,
           "unit": "Hz"
         },
-        {
-          "id": "min",
-          "label": "Min",
+        "min": {
           "type": "number",
-          "default": 0,
+          "label": "Min",
+          "defaultValue": 0,
           "min": -20000,
           "max": 20000,
           "step": 0.01,
           "unit": ""
         },
-        {
-          "id": "max",
-          "label": "Max",
+        "max": {
           "type": "number",
-          "default": 1,
+          "label": "Max",
+          "defaultValue": 1,
           "min": -20000,
           "max": 20000,
           "step": 0.01,
           "unit": ""
         }
-      ],
+      },
       "views": [],
       "demandRoot": null
     },
@@ -2533,14 +2817,14 @@
           "schemaVersion": 1
         }
       ],
-      "params": [],
+      "params": {},
       "views": [],
       "demandRoot": null
     },
     {
       "kind": "io.midi.in",
       "title": "MIDI In",
-      "description": "Explicitly selected Web MIDI input; channel zero accepts all channels, selected CC normalizes to 0\u20131. No SysEx.",
+      "description": "Explicitly selected Web MIDI input; channel zero accepts all channels, selected CC normalizes to 0–1. No SysEx.",
       "runtime": {
         "status": "implemented",
         "domain": "control",
@@ -2576,28 +2860,28 @@
           "schemaVersion": 1
         }
       ],
-      "params": [
-        {
-          "id": "channel",
+      "params": {
+        "channel": {
+          "type": "number",
           "label": "Channel",
-          "type": "integer",
-          "default": 0,
+          "defaultValue": 0,
           "min": 0,
           "max": 16,
           "step": 1,
+          "integer": true,
           "unit": ""
         },
-        {
-          "id": "controller",
+        "controller": {
+          "type": "number",
           "label": "Controller",
-          "type": "integer",
-          "default": 1,
+          "defaultValue": 1,
           "min": 0,
           "max": 127,
           "step": 1,
+          "integer": true,
           "unit": ""
         }
-      ],
+      },
       "views": [],
       "demandRoot": null
     },
@@ -2627,18 +2911,18 @@
         }
       ],
       "outputs": [],
-      "params": [
-        {
-          "id": "channel",
+      "params": {
+        "channel": {
+          "type": "number",
           "label": "Channel",
-          "type": "integer",
-          "default": 1,
+          "defaultValue": 1,
           "min": 1,
           "max": 16,
           "step": 1,
+          "integer": true,
           "unit": ""
         }
-      ],
+      },
       "views": [],
       "demandRoot": "external-output"
     },
@@ -2660,15 +2944,14 @@
           "schemaVersion": 1
         }
       ],
-      "params": [
-        {
-          "id": "address",
+      "params": {
+        "address": {
+          "type": "string",
           "label": "Address",
-          "type": "text",
-          "default": "/audiobrain/control",
+          "defaultValue": "/audiobrain/control",
           "maxLength": 128
         }
-      ],
+      },
       "views": [],
       "demandRoot": null
     },
@@ -2691,15 +2974,14 @@
         }
       ],
       "outputs": [],
-      "params": [
-        {
-          "id": "address",
+      "params": {
+        "address": {
+          "type": "string",
           "label": "Address",
-          "type": "text",
-          "default": "/audiobrain/control",
+          "defaultValue": "/audiobrain/control",
           "maxLength": 128
         }
-      ],
+      },
       "views": [],
       "demandRoot": "external-output"
     },
@@ -2721,22 +3003,20 @@
           "schemaVersion": 1
         }
       ],
-      "params": [
-        {
-          "id": "name",
+      "params": {
+        "name": {
+          "type": "string",
           "label": "Name",
-          "type": "text",
-          "default": "value",
+          "defaultValue": "value",
           "maxLength": 128
         },
-        {
-          "id": "channel",
+        "channel": {
+          "type": "string",
           "label": "Channel",
-          "type": "text",
-          "default": "audiobrain-v1",
+          "defaultValue": "audiobrain-v1",
           "maxLength": 128
         }
-      ],
+      },
       "views": [],
       "demandRoot": null
     },
@@ -2759,22 +3039,20 @@
         }
       ],
       "outputs": [],
-      "params": [
-        {
-          "id": "name",
+      "params": {
+        "name": {
+          "type": "string",
           "label": "Name",
-          "type": "text",
-          "default": "value",
+          "defaultValue": "value",
           "maxLength": 128
         },
-        {
-          "id": "channel",
+        "channel": {
+          "type": "string",
           "label": "Channel",
-          "type": "text",
-          "default": "audiobrain-v1",
+          "defaultValue": "audiobrain-v1",
           "maxLength": 128
         }
-      ],
+      },
       "views": [],
       "demandRoot": "external-output"
     }

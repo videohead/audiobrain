@@ -1,6 +1,6 @@
 import { useRef, useState, useSyncExternalStore } from 'react';
 import { Download, Plus, Radio, Trash2, Upload } from 'lucide-react';
-import { getOperatorDefinition, type GraphDocument, type ParameterDefinition, type ParameterValue } from '../graph';
+import { getOperatorDefinition, parameterList, type GraphDocument, type ParameterEntry, type GraphParamValue } from '../graph';
 import { controller, type ControlMapping } from '../control/controller';
 import type { ControlAction } from '../control/actions';
 
@@ -25,11 +25,12 @@ function relayBaseUrl(bridgeUrl: string): string {
   } catch { return 'http://127.0.0.1:8934'; }
 }
 
-function ValueInput({ label, parameter, value, onChange }: { label: string; parameter: ParameterDefinition; value: ParameterValue; onChange: (value: ParameterValue) => void }) {
-  if (parameter.type === 'enum') {
-    return <label className="connection-field">{label}<select value={String(value)} onChange={(event) => onChange(event.target.value)}>{parameter.choices.map((choice) => <option key={choice} value={choice}>{choice}</option>)}</select></label>;
+function ValueInput({ label, parameter, value, onChange }: { label: string; parameter: ParameterEntry; value: GraphParamValue; onChange: (value: GraphParamValue) => void }) {
+  if (parameter.type === 'select') {
+    return <label className="connection-field">{label}<select value={String(value)} onChange={(event) => onChange(event.target.value)}>{parameter.options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>;
   }
-  if (parameter.type === 'text') return null;
+  if (parameter.type === 'boolean') return <label className="connection-field"><span>{label}</span><input type="checkbox" checked={value === true} onChange={(event) => onChange(event.target.checked)} /></label>;
+  if (parameter.type === 'string') return null;
   return <label className="connection-field">{label}<input type="number" min={parameter.min} max={parameter.max} step={parameter.step} value={Number(value)} onChange={(event) => onChange(event.target.valueAsNumber)} required /></label>;
 }
 
@@ -43,21 +44,22 @@ export function ControllersPanel({ project }: { project: GraphDocument }) {
   const [nodeId, setNodeId] = useState('');
   const [paramId, setParamId] = useState('');
   const [mode, setMode] = useState<Mode>('absolute');
-  const [low, setLow] = useState<ParameterValue>(0);
-  const [high, setHigh] = useState<ParameterValue>(1);
+  const [low, setLow] = useState<GraphParamValue>(0);
+  const [high, setHigh] = useState<GraphParamValue>(1);
   const [command, setCommand] = useState<Command>('toggle');
   const [address, setAddress] = useState('ws://127.0.0.1:8934/control-ws');
   const [token, setToken] = useState('');
   const node = project.nodes.find((candidate) => candidate.id === nodeId);
-  const parameters = node ? getOperatorDefinition(node.kind).params.filter((candidate) => candidate.type !== 'text') : [];
+  const parameters = node ? parameterList(getOperatorDefinition(node.kind)).filter((candidate) => candidate.type !== 'string') : [];
   const parameter = parameters.find((candidate) => candidate.id === paramId);
 
   const selectParameter = (next: string) => {
     setParamId(next);
     const selected = parameters.find((candidate) => candidate.id === next);
     if (!selected) return;
-    if (selected.type === 'enum') { setLow(selected.choices[0] ?? ''); setHigh(selected.choices.at(-1) ?? ''); setMode('toggle'); }
-    else { setLow(selected.min); setHigh(selected.max); setMode('absolute'); }
+    if (selected.type === 'select') { setLow(selected.options[0]?.value ?? ''); setHigh(selected.options.at(-1)?.value ?? ''); setMode('toggle'); }
+    else if (selected.type === 'boolean') { setLow(false); setHigh(true); setMode('toggle'); }
+    else if (selected.type === 'number') { setLow(selected.min); setHigh(selected.max); setMode('absolute'); }
   };
   const save = () => {
     const action: ControlAction = type === 'transport' ? { type, command } : { type, nodeId, paramId, mode, low, high };
@@ -112,7 +114,7 @@ export function ControllersPanel({ project }: { project: GraphDocument }) {
           <label className="connection-field">Parameter<select value={paramId} onChange={(event) => selectParameter(event.target.value)} required><option value="">Select parameter</option>
             {parameters.map((candidate) => <option key={candidate.id} value={candidate.id}>{candidate.label}</option>)}</select></label>
           <label className="connection-field">Behavior<select value={mode} onChange={(event) => setMode(event.target.value as Mode)}>
-            {parameter && parameter.type !== 'enum' ? <option value="absolute">Absolute value</option> : null}<option value="set">Set on press</option><option value="toggle">Toggle</option><option value="momentary">Momentary</option></select></label>
+            {parameter && parameter.type === 'number' ? <option value="absolute">Absolute value</option> : null}<option value="set">Set on press</option><option value="toggle">Toggle</option><option value="momentary">Momentary</option></select></label>
           {parameter ? <><ValueInput label="Low / off" parameter={parameter} value={low} onChange={setLow} /><ValueInput label="High / on" parameter={parameter} value={high} onChange={setHigh} /></> : null}
         </>}
         <button type="submit" className="secondary-button"><Plus size={14} />Save mapping</button>

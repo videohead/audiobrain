@@ -1,5 +1,5 @@
 import { useId, useRef, useState, type PointerEvent } from 'react';
-import { getOperatorDefinition, type GraphDocument, type GraphNode, type ParameterDefinition } from '../graph';
+import { getOperatorDefinition, getParameter, type GraphDocument, type GraphNode, type ParameterEntry } from '../graph';
 import type { NodeSnapshot } from '../runtime/AudioBrainRuntime';
 import { useProjectStore } from '../store';
 import { shapesHeadColor } from './shapesPresentation';
@@ -7,7 +7,7 @@ import { pointHitsShape, shapePhaseAdjustment, shapePhaseAtPoint, wrapShapePhase
 import './InstrumentView.css';
 
 interface InstrumentViewProps { node: GraphNode; project: GraphDocument; snapshot?: NodeSnapshot; compact?: boolean; onShowPlayheads?: () => void }
-type NumericParameter = Extract<ParameterDefinition, { type: 'number' | 'integer' }>;
+type NumericParameter = Extract<ParameterEntry, { type: 'number' }>;
 interface BoundParameter { target: GraphNode; parameter: NumericParameter; value: number; wired: boolean }
 type ShapeTool = 'playheads' | 'move' | 'rotation' | 'curvature';
 type ViewDrag = { pointerId: number; start: ViewPoint; x: number; mode: ShapeTool | 'linear' | 'scrub'; binding?: BoundParameter; second?: BoundParameter; headIndex?: number; startAngle?: number };
@@ -25,9 +25,9 @@ export function InstrumentView({ node, project, snapshot, compact, onShowPlayhea
   const isGraph = node.kind === 'view.graph';
   const resolveParameter = (targetId?: string, parameterId?: string): BoundParameter | undefined => {
     const target = project.nodes.find((candidate) => candidate.id === targetId);
-    const parameter = target && getOperatorDefinition(target.kind).params.find((candidate) => candidate.id === parameterId);
-    if (!target || !parameter || (parameter.type !== 'number' && parameter.type !== 'integer')) return undefined;
-    return { target, parameter, value: Number(target.params[parameter.id] ?? parameter.default), wired: project.edges.some((edge) => edge.target.nodeId === target.id && edge.target.portId === parameter.id) };
+    const parameter = target && getParameter(getOperatorDefinition(target.kind), parameterId);
+    if (!target || !parameter || parameter.type !== 'number') return undefined;
+    return { target, parameter, value: Number(target.params[parameter.id] ?? parameter.defaultValue), wired: project.edges.some((edge) => edge.target.nodeId === target.id && edge.target.portId === parameter.id) };
   };
   const resolveIntent = (id?: string) => {
     const binding = id ? node.viewBindings?.[id] : Object.values(node.viewBindings ?? {})[0];
@@ -45,7 +45,7 @@ export function InstrumentView({ node, project, snapshot, compact, onShowPlayhea
     if (!binding || binding.wired) return;
     const { parameter, target } = binding;
     const snapped = parameter.min + Math.round((next - parameter.min) / parameter.step) * parameter.step;
-    store.setParameter(target.id, parameter.id, Math.min(parameter.max, Math.max(parameter.min, Number(snapped.toFixed(6)))));
+    store.setNodeParam(target.id, parameter.id, Math.min(parameter.max, Math.max(parameter.min, Number(snapped.toFixed(6)))));
   };
   const release = () => { drag.current = null; store.endGesture(token); };
   const pointerPoint = (event: { clientX: number; clientY: number }): ViewPoint => {

@@ -1,7 +1,7 @@
 import { UnsupportedActionError } from '@brain/control/mapping';
 import type { RemoteEventKind } from '@brain/control/mapping/interop';
 import type { ControlEvent } from '@brain/control/protocol/events';
-import { getOperatorDefinition, type ParameterDefinition, type ParameterValue } from '../graph';
+import { getOperatorDefinition, getParameter, type OperatorParamDefinition, type GraphParamValue } from '../graph';
 import type { ProjectStoreApi } from '../store/projectStore';
 
 /**
@@ -9,7 +9,7 @@ import type { ProjectStoreApi } from '../store/projectStore';
  * transport. Parameter actions share their shape with VideoBrain's, so a file with those loads in either app.
  */
 export type ControlAction =
-  | { type: 'parameter'; nodeId: string; paramId: string; mode: 'absolute' | 'set' | 'toggle' | 'momentary'; low: ParameterValue; high: ParameterValue }
+  | { type: 'parameter'; nodeId: string; paramId: string; mode: 'absolute' | 'set' | 'toggle' | 'momentary'; low: GraphParamValue; high: GraphParamValue }
   | { type: 'transport'; command: 'play' | 'pause' | 'toggle' | 'reset' | 'panic' };
 export type { ControlEvent };
 
@@ -18,7 +18,7 @@ export interface TransportControl { setPlaying: (playing: boolean) => void; isPl
 const TRANSPORT_COMMANDS = ['play', 'pause', 'toggle', 'reset', 'panic'] as const;
 const KNOWN_TYPES = ['parameter', 'transport'];
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
-const isScalar = (value: unknown): value is ParameterValue =>
+const isScalar = (value: unknown): value is GraphParamValue =>
   typeof value === 'boolean' || typeof value === 'string' && value.length <= 128 || typeof value === 'number' && Number.isFinite(value);
 
 /** Validates an action from untrusted input (saved settings or an imported file). Actions of other apps are "unsupported", not invalid. */
@@ -46,9 +46,16 @@ export function eventsFor(action: ControlAction): RemoteEventKind[] {
   return ['press'];
 }
 
-interface HeldParameter { nodeId: string; paramId: string; previous: ParameterValue; applied: ParameterValue }
+interface HeldParameter { nodeId: string; paramId: string; previous: GraphParamValue; applied: GraphParamValue }
 
 export function createControlActions(store: ProjectStoreApi, transport: () => TransportControl) {
+  /** Sets a parameter, turning the store's recorded failure into an error for the controller to report. */
+  const apply = (nodeId: string, paramId: string, value: GraphParamValue) => {
+    if (store.getState().setNodeParam(nodeId, paramId, value)) return;
+    const message = store.getState().error ?? 'The parameter could not be changed.';
+    store.getState().clearError();
+    throw new Error(message);
+  };
   const held = new Map<string, HeldParameter>();
   const pressed = new Set<string>();
 
@@ -56,19 +63,22 @@ export function createControlActions(store: ProjectStoreApi, transport: () => Tr
     const document = store.getState().document;
     const node = document.nodes.find((candidate) => candidate.id === nodeId);
     if (!node) throw new Error('The mapped node is missing.');
-    const parameter = getOperatorDefinition(node.kind).params.find((candidate) => candidate.id === paramId);
-    if (!parameter || parameter.type === 'text') throw new Error('This parameter cannot be controlled.');
+    const parameter = getParameter(getOperatorDefinition(node.kind), paramId);
+    if (!parameter || parameter.type === 'string') throw new Error('This parameter cannot be controlled.');
     if (document.edges.some(({ target: end }) => end.nodeId === nodeId && end.portId === paramId)) {
       throw new Error('Disconnect the graph input before controlling this parameter.');
     }
     return { node, parameter };
   };
 
-  const validateValue = (parameter: ParameterDefinition, value: ParameterValue) => {
-    if (parameter.type === 'number' || parameter.type === 'integer') {
+  const validateValue = (parameter: OperatorParamDefinition, value: GraphParamValue) => {
+    if (parameter.type === 'number') {
       if (typeof value !== 'number' || !Number.isFinite(value) || value < parameter.min || value > parameter.max) throw new Error('Value is outside the parameter range.');
-    } else if (parameter.type === 'enum') {
-      if (typeof value !== 'string' || !parameter.choices.includes(value)) throw new Error('Choose a valid parameter option.');
+      if (parameter.integer && !Number.isSafeInteger(value)) throw new Error('Value must be a whole number.');
+    } else if (parameter.type === 'select') {
+      if (typeof value !== 'string' || !parameter.options.some((option) => option.value === value)) throw new Error('Choose a valid parameter option.');
+    } else if (parameter.type === 'boolean') {
+      if (typeof value !== 'boolean') throw new Error('A boolean value is required.');
     }
   };
 
@@ -78,7 +88,7 @@ export function createControlActions(store: ProjectStoreApi, transport: () => Tr
     held.delete(id);
     if (!entry) return;
     const node = store.getState().document.nodes.find((candidate) => candidate.id === entry.nodeId);
-    if (node && Object.is(node.params[entry.paramId], entry.applied)) store.getState().setParameter(entry.nodeId, entry.paramId, entry.previous);
+    if (node && Object.is(node.params[entry.paramId], entry.applied)) apply(entry.nodeId, entry.paramId, entry.previous);
   };
 
   const execute = (id: string, action: ControlAction, event: ControlEvent) => {
@@ -99,7 +109,7 @@ export function createControlActions(store: ProjectStoreApi, transport: () => Tr
       let value = action.high;
       if (action.mode === 'absolute') {
         if (event.type !== 'value') return;
-        if ((parameter.type !== 'number' && parameter.type !== 'integer') || typeof action.low !== 'number' || typeof action.high !== 'number') throw new Error('Absolute mappings require a numeric parameter.');
+        if (parameter.type !== 'number' || typeof action.low !== 'number' || typeof action.high !== 'number') throw new Error('Absolute mappings require a numeric parameter.');
         const scaled = action.low + (action.high - action.low) * event.value;
         const snapped = Number((parameter.min + Math.round((scaled - parameter.min) / parameter.step) * parameter.step).toFixed(10));
         value = Math.max(parameter.min, Math.min(parameter.max, snapped));
@@ -108,10 +118,10 @@ export function createControlActions(store: ProjectStoreApi, transport: () => Tr
         if (action.mode === 'toggle') value = Object.is(node.params[action.paramId], action.high) ? action.low : action.high;
         if (action.mode === 'momentary') {
           if ([...held.values()].some((entry) => entry.nodeId === node.id && entry.paramId === action.paramId)) throw new Error('This parameter is already held by another mapping.');
-          held.set(id, { nodeId: node.id, paramId: action.paramId, previous: node.params[action.paramId] ?? parameter.default, applied: value });
+          held.set(id, { nodeId: node.id, paramId: action.paramId, previous: node.params[action.paramId] ?? parameter.defaultValue, applied: value });
         }
       }
-      store.getState().setParameter(node.id, action.paramId, value);
+      apply(node.id, action.paramId, value);
     }
     if (event.type === 'press') pressed.add(id);
   };

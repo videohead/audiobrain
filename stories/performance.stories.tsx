@@ -12,7 +12,7 @@ type Story = StoryObj;
 
 function SurfaceFixture({ index, arrange = false, readerVariant }: { index: number; arrange?: boolean; readerVariant?: 'line' | 'mixed' }) {
   const store = useProjectStore();
-  const { loadProject } = store;
+  const { importProject } = store;
   useEffect(() => {
     const preset = PRESETS[index];
     if (!preset) return;
@@ -20,8 +20,8 @@ function SurfaceFixture({ index, arrange = false, readerVariant }: { index: numb
     const reader = project.nodes.find((node) => node.kind === 'shapes.reader');
     if (reader && readerVariant === 'line') Object.assign(reader.params, { reader: 'line', head2Axis: 'horizontal', head2Direction: 'reverse' });
     if (reader && readerVariant === 'mixed') Object.assign(reader.params, { reader: 'points', head2Reader: 'line', head2Direction: 'reverse', head3Reader: 'radar', head4Direction: 'reverse', head4Phase: 0.08 });
-    loadProject(project);
-  }, [index, loadProject, readerVariant]);
+    importProject(project);
+  }, [index, importProject, readerVariant]);
   const evaluation = new GraphEvaluator(compileGraph(store.document)).evaluate({ time: 0.6, start: 0.6, end: 0.6, levels: {}, controls: new Map(), midiNotes: new Map() });
   const snapshot: RuntimeSnapshot = { time: 0.6, beat: 1.2, playing: false, audioState: 'off', level: 0, voiceCount: 0, nodes: evaluation.snapshots, diagnostics: [], capabilities: { midi: 'disabled', microphone: 'disabled', osc: 'disconnected', brain: 'disconnected' }, epoch: 0, droppedEvents: 0 };
   return <div className="performance-panel expanded" style={{ maxWidth: 1000, margin: 'auto' }}><PerformanceSurface snapshot={snapshot} arrange={arrange} /></div>;

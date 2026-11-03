@@ -203,13 +203,13 @@ export class GraphEvaluator {
   }
   private params(compiled: CompiledNode, input: <T>(name: string) => T | undefined): GraphParams {
     const result: GraphParams = {};
-    for (const param of compiled.definition.params) {
-      const literal = compiled.node.params[param.id] ?? param.default;
-      if (param.type === 'number' || param.type === 'integer') {
-        const connected = input<number>(param.id);
+    for (const [id, param] of Object.entries(compiled.definition.params)) {
+      const literal = compiled.node.params[id] ?? param.defaultValue;
+      if (param.type === 'number') {
+        const connected = input<number>(id);
         const value = clamp(connected === undefined ? Number(literal) : connected, param.min, param.max);
-        result[param.id] = param.type === 'integer' ? Math.round(value) : value;
-      } else result[param.id] = literal;
+        result[id] = param.integer ? Math.round(value) : value;
+      } else result[id] = literal;
     }
     return result;
   }

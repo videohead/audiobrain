@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { SlidersHorizontal, Activity, ArrowUpRight, AudioLines, ChevronDown, CircleHelp, Copy, Download, Expand, FolderOpen, FilePlus2, Grip, LayoutGrid, Network, Pause, Pencil, Pin, Play, Plus, Radio, Redo2, RotateCcw, Search, Square, Trash2, Undo2, Volume2, VolumeX, X } from 'lucide-react';
-import { GRAPH_LIMITS, OPERATOR_DEFINITIONS, PRESETS, getOperatorDefinition, createId, parseGraphDocument, serializeGraphDocument } from './graph';
+import { GRAPH_LIMITS, OPERATOR_DEFINITIONS, PRESETS, getOperatorDefinition, parameterList, createId, parseGraphDocument, serializeGraphDocument } from './graph';
 import { projectStore, useProjectStore } from './store';
 import { AudioBrainRuntime } from './runtime/AudioBrainRuntime';
 import { GraphEditor } from './components/GraphEditor';
@@ -36,7 +36,7 @@ export function App() {
   const importInput = useRef<HTMLInputElement>(null);
   const fullscreen = useRef<HTMLDivElement>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
-  const selected = store.document.nodes.find((node) => node.id === store.selection);
+  const selected = store.document.nodes.find((node) => node.id === store.selectedNodeId);
   const definition = selected && getOperatorDefinition(selected.kind);
   const run = (operation: Promise<unknown>) => { void operation.catch((error: unknown) => setNotice(error instanceof Error ? error.message : String(error))); };
   const closeDialog = () => { presetRequest.current += 1; setPresetBusyId(null); setPresetError(null); setDialog(null); };
@@ -70,7 +70,7 @@ export function App() {
     setPresetBusyId(id); setPresetError(null);
     void buildPresetGraph(id).then(project => {
       if (request !== presetRequest.current) return;
-      const applied = action === 'load' ? store.loadProject(project) : store.addInstrument(project);
+      const applied = action === 'load' ? store.importProject(project).ok : store.addInstrument(project);
       if (applied) { closeDialog(); setNotice(action === 'add' ? 'Instrument added with independent object identities and controls.' : null); }
       else setPresetError(projectStore.getState().error ?? 'This preset could not be applied to the current project.');
     }).catch((error: unknown) => { if (request === presetRequest.current) setPresetError(error instanceof Error ? error.message : String(error)); })
@@ -118,7 +118,7 @@ export function App() {
         <button className={mode === 'arrange' ? 'active' : ''} onClick={() => setMode('arrange')}><Grip size={14} /> Arrange</button>
         <button className={mode === 'perform' ? 'active' : ''} onClick={() => setMode('perform')}><LayoutGrid size={14} /> Perform</button>
       </div>
-      <div className="topbar-actions"><button className="icon-button" title="New instrument" aria-label="New instrument" onClick={() => { store.loadProject({ documentType: 'audiobrain.project', schemaVersion: 1, id: createId('project'), title: 'Untitled Morphazoid', nodes: [], edges: [], performance: { version: 1, columns: 12, widgets: [] } }); setNotice(null); setMode('graph'); }}><FilePlus2 size={17} /></button><button className="icon-button" title="Import project" aria-label="Import project" onClick={() => importInput.current?.click()}><FolderOpen size={17} /></button>
+      <div className="topbar-actions"><button className="icon-button" title="New instrument" aria-label="New instrument" onClick={() => { store.importProject({ documentType: 'audiobrain.project', schemaVersion: 1, id: createId('project'), title: 'Untitled Morphazoid', nodes: [], edges: [], performance: { version: 1, columns: 12, widgets: [] } }); setNotice(null); setMode('graph'); }}><FilePlus2 size={17} /></button><button className="icon-button" title="Import project" aria-label="Import project" onClick={() => importInput.current?.click()}><FolderOpen size={17} /></button>
         <button className="icon-button" title="Export project" aria-label="Export project" onClick={save}><Download size={17} /></button>
         <button className="icon-button" title="Controllers (incomplete)" aria-label="Controllers" onClick={() => setDialog('controllers')}><SlidersHorizontal size={17} /></button>
         <button className="icon-button" title="Help" aria-label="Help" onClick={() => setDialog('help')}><CircleHelp size={17} /></button>
@@ -126,7 +126,7 @@ export function App() {
     </header>
     <div className="projectbar">
       <div className="preset-select"><span className="eyebrow">INSTRUMENT</span><label className="sr-only" htmlFor="preset-picker">Instrument preset</label><select id="preset-picker" value={PRESETS.some((preset) => preset.id === store.document.id) ? store.document.id : ''}
-        onChange={(event) => { const preset = PRESETS.find((item) => item.id === event.target.value); if (preset) { store.loadProject(preset); store.selectNode(null); setNotice(null); } }}>
+        onChange={(event) => { const preset = PRESETS.find((item) => item.id === event.target.value); if (preset) { store.importProject(preset); store.selectNode(null); setNotice(null); } }}>
         {!PRESETS.some((preset) => preset.id === store.document.id) && <option value="">{store.document.title}</option>}
         {PRESETS.map((preset) => <option key={preset.id} value={preset.id}>{preset.title}</option>)}
       </select><ChevronDown size={13} /></div>
@@ -158,9 +158,9 @@ export function App() {
         <div className="panel-heading"><span className="panel-title"><Activity size={14} /> Performance</span><span className="live-badge"><i className={snapshot.playing ? 'live' : ''} /> {snapshot.playing ? 'RUNNING' : 'READY'}</span><button className="icon-button" aria-label="Fullscreen performance" title="Fullscreen performance" onClick={() => { setMode('perform'); if (fullscreen.current?.requestFullscreen) run(fullscreen.current.requestFullscreen()); }}><Expand size={14} /></button></div>
         <div className="performance-heading"><span className="eyebrow">{mode === 'arrange' ? 'YOUR PERFORMANCE LAYOUT' : 'GEOMETRY → MUSIC → SOUND'}</span><h1>{store.document.title}</h1><p>{mode === 'arrange' ? 'Give your instrument its own space.' : 'A graphic you can play. A graph you can change.'}</p></div>
         <PerformanceSurface snapshot={snapshot} arrange={mode === 'arrange'} compact={mode === 'graph'} />
-        {mode === 'graph' && selected && definition && <div className="inspector"><header><div><span className="eyebrow">INSPECTOR</span><h2>{selected.label ?? definition.title}</h2></div><button className="icon-button" aria-label={`Duplicate ${selected.label ?? definition.title}`} title="Duplicate object" onClick={() => store.duplicateNode(selected.id)}><Copy size={14} /></button><button className="icon-button danger" aria-label={`Delete ${definition.title}`} onClick={() => store.removeNode(selected.id)}><Trash2 size={14} /></button></header><p>{definition.description}</p><label className="object-identity">Object name<input aria-label="Object name" key={`${selected.id}:${selected.label ?? ''}`} defaultValue={selected.label ?? ''} placeholder={definition.title} maxLength={96} onBlur={event => store.renameNode(selected.id, event.target.value)} onKeyDown={event => { if (event.key === 'Enter') event.currentTarget.blur(); }} /><code>Stable ID: {selected.id}</code></label><DeviceActions kind={selected.kind} />
-          {selected.kind === 'shapes.reader' ? <ShapesPlayheadControls node={selected} project={store.document} snapshot={snapshot.nodes[selected.id]} onPin={() => store.pinView(selected.id, 'playheads')} /> : definition.params.map((parameter) => <ParameterControl key={parameter.id} nodeId={selected.id} parameter={parameter} value={selected.params[parameter.id] ?? parameter.default} liveValue={snapshot.nodes[selected.id]?.params?.[parameter.id]}
-            onChange={(value) => store.setParameter(selected.id, parameter.id, value)} onBegin={store.beginGesture} onEnd={store.endGesture}
+        {mode === 'graph' && selected && definition && <div className="inspector"><header><div><span className="eyebrow">INSPECTOR</span><h2>{selected.label ?? definition.title}</h2></div><button className="icon-button" aria-label={`Duplicate ${selected.label ?? definition.title}`} title="Duplicate object" onClick={() => store.duplicateNode(selected.id)}><Copy size={14} /></button><button className="icon-button danger" aria-label={`Delete ${definition.title}`} onClick={() => store.deleteNode(selected.id)}><Trash2 size={14} /></button></header><p>{definition.description}</p><label className="object-identity">Object name<input aria-label="Object name" key={`${selected.id}:${selected.label ?? ''}`} defaultValue={selected.label ?? ''} placeholder={definition.title} maxLength={96} onBlur={event => store.renameNode(selected.id, event.target.value)} onKeyDown={event => { if (event.key === 'Enter') event.currentTarget.blur(); }} /><code>Stable ID: {selected.id}</code></label><DeviceActions kind={selected.kind} />
+          {selected.kind === 'shapes.reader' ? <ShapesPlayheadControls node={selected} project={store.document} snapshot={snapshot.nodes[selected.id]} onPin={() => store.pinView(selected.id, 'playheads')} /> : parameterList(definition).map((parameter) => <ParameterControl key={parameter.id} nodeId={selected.id} parameter={parameter} value={selected.params[parameter.id] ?? parameter.defaultValue} liveValue={snapshot.nodes[selected.id]?.params?.[parameter.id]}
+            onChange={(value) => store.setNodeParam(selected.id, parameter.id, value)} onBegin={store.beginGesture} onEnd={store.endGesture}
             wired={store.document.edges.some((edge) => edge.target.nodeId === selected.id && edge.target.portId === parameter.id)} onPin={() => store.pinParameter(selected.id, parameter.id)} />)}
           <ViewBindings node={selected} /><div className="inspector-ports">{definition.inputs.map((port) => <span key={port.id}>{port.label}<code>{port.type}</code></span>)}</div>
         </div>}
@@ -172,7 +172,7 @@ export function App() {
     <input ref={importInput} type="file" accept=".json,application/json" className="sr-only" aria-label="Import AudioBrain JSON" onChange={(event) => {
       const file = event.target.files?.[0]; if (!file) return;
       if (file.size > GRAPH_LIMITS.maxJsonBytes) { setNotice('Project exceeds the 1 MiB limit.'); event.target.value = ''; return; }
-      run(file.text().then((text) => { const value = JSON.parse(text) as unknown; const isPreset = value !== null && typeof value === 'object' && 'documentType' in value && value.documentType === 'audiobrain.instrument-preset'; const project = isPreset ? reconstructPreset(parsePresetDefinition(value)) : parseGraphDocument(value); if (store.loadProject(project)) setNotice(isPreset ? 'Preset rebuilt with its saved settings and layout.' : 'Project imported.'); })); event.target.value = '';
+      run(file.text().then((text) => { const value = JSON.parse(text) as unknown; const isPreset = value !== null && typeof value === 'object' && 'documentType' in value && value.documentType === 'audiobrain.instrument-preset'; const project = isPreset ? reconstructPreset(parsePresetDefinition(value)) : parseGraphDocument(value); if (store.importProject(project).ok) setNotice(isPreset ? 'Preset rebuilt with its saved settings and layout.' : 'Project imported.'); })); event.target.value = '';
     }} />
     <dialog className={`app-dialog${dialog === 'presets' ? ' preset-library-dialog' : ''}`} ref={dialogRef} onCancel={closeDialog} onClick={(event) => { if (event.target === event.currentTarget) closeDialog(); }}>
       <header><h2>{dialog === 'help' ? 'A little strange. Very playable.' : dialog === 'rename' ? 'Name your instrument' : dialog === 'presets' ? 'Morphazoid presets' : dialog === 'controllers' ? 'Controllers' : 'Connections'}</h2><button className="icon-button" aria-label="Close dialog" onClick={closeDialog}><X size={18} /></button></header>

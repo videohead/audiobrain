@@ -1,6 +1,6 @@
 import { useRef, type PointerEvent } from 'react';
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Grip, Maximize2, Minimize2, X } from 'lucide-react';
-import { GRAPH_LIMITS, getOperatorDefinition, type GraphDocument } from '../graph';
+import { GRAPH_LIMITS, getOperatorDefinition, getParameter, type GraphDocument } from '../graph';
 import type { RuntimeSnapshot } from '../runtime/AudioBrainRuntime';
 import { useProjectStore } from '../store';
 import { ParameterControl } from '../components/ParameterControl';
@@ -38,7 +38,7 @@ export function PerformanceSurface({ snapshot, arrange, compact }: PerformanceSu
       {project.performance.widgets.map((widget) => {
         const target = project.nodes.find((node) => node.id === widget.target.nodePath[0]);
         const definition = target && getOperatorDefinition(target.kind);
-        const parameter = widget.kind === 'param' ? definition?.params.find((param) => param.id === widget.target.paramId) : undefined;
+        const parameter = widget.kind === 'param' ? definition && getParameter(definition, widget.target.paramId) : undefined;
         const nodeSnapshot = target ? snapshot.nodes[target.id] : undefined;
         const meterValue = Math.max(0, Math.min(1, nodeSnapshot?.level ?? nodeSnapshot?.value ?? 0));
         const isView = widget.kind === 'view';
@@ -53,7 +53,7 @@ export function PerformanceSurface({ snapshot, arrange, compact }: PerformanceSu
             <button type="button" aria-label={`Remove ${widget.id} from performance`} onClick={() => store.removeWidget(widget.id)}><X size={12} /></button>
           </div>}
           {!target ? <p>Source removed. Undo to restore this control.</p> : widget.kind === 'param' && parameter ? <ParameterControl nodeId={target.id} parameter={parameter}
-            value={target.params[parameter.id] ?? parameter.default} liveValue={nodeSnapshot?.params?.[parameter.id]} onChange={(value) => store.setParameter(target.id, parameter.id, value)}
+            value={target.params[parameter.id] ?? parameter.defaultValue} liveValue={nodeSnapshot?.params?.[parameter.id]} onChange={(value) => store.setNodeParam(target.id, parameter.id, value)}
             onBegin={store.beginGesture} onEnd={store.endGesture}
             wired={project.edges.some((edge) => edge.target.nodeId === target.id && edge.target.portId === parameter.id)} />
             : isPlayheads ? <ShapesPlayheadControls node={target} project={project} snapshot={nodeSnapshot} compact={compact} />

@@ -64,7 +64,7 @@ type NoteEvent = {
 
 type ParameterTarget = { nodePath: string[]; paramId: string };
 type SetParameter = {
-  type: 'setParameter';
+  type: 'setNodeParam';
   requestId: string;
   expectedRevision: number;
   gestureId?: string;
@@ -83,7 +83,7 @@ Graph events and timestamped control/feature snapshots share host-monotonic time
 
 | Input | Route | Stored/undo behavior |
 | --- | --- | --- |
-| Edit-view slider or pinned performance slider | Validated `setParameter` gesture | One saved literal change/undo item per gesture |
+| Edit-view slider or pinned performance slider | Validated `setNodeParam` gesture | One saved literal change/undo item per gesture |
 | Shape drag changing curvature/rotation | View intent → declared public parameter commands | Same values as Inspector; grouped gesture |
 | Graph vertex drag | Validated topology edit, stable vertex ID | One geometry revision and undo gesture; no coordinate-to-note guessing |
 | MIDI CC/OSC stream wired into a control port | Explicit parser/select/map/smooth → compatible parameter input | Live override, saved literal retained; record only on explicit automation capture |

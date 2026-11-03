@@ -3,6 +3,7 @@ import { compileGraph, GraphCompileError, tryCompileGraph } from '../graph/compi
 import { PRESETS } from '../graph/presets';
 import type { GraphDocument } from '../graph/types';
 import { branchGeometry, expandGrammar } from '../instruments/geometry';
+import { GraphDocumentError } from '@brain/control/graph/validation';
 import { exactKeys, object, string } from './validation';
 import type { PresetAssessment, PresetDefinition } from './types';
 
@@ -16,12 +17,12 @@ export function assessFamily(familyId: string): PresetAssessment {
 }
 
 function number(value: unknown, label: string): number {
-  if (typeof value !== 'number' || !Number.isFinite(value)) throw new Error(`${label}: expected a finite number`);
+  if (typeof value !== 'number' || !Number.isFinite(value)) throw new GraphDocumentError(`${label} must be a finite number.`);
   return value;
 }
 function textOrDefault(value: unknown, fallback: string, label: string): string {
   if (value === undefined) return fallback;
-  if (typeof value !== 'string') throw new Error(`${label}: expected text`);
+  if (typeof value !== 'string') throw new GraphDocumentError(`${label} must be a string.`);
   return value;
 }
 function freshInstance(graph: GraphDocument): GraphDocument {
@@ -71,7 +72,7 @@ export function reconstructPreset(definition: PresetDefinition): GraphDocument {
     branchGeometry(expandGrammar(String(grammar.params.axiom), rules, Number(grammar.params.iterations)), Number(geometry.params.angleDeg), Number(geometry.params.lengthScale), { drawSymbols: String(geometry.params.drawSymbols), moveSymbols: String(geometry.params.moveSymbols), turnAsymmetry: Number(geometry.params.turnAsymmetry) });
   } else {
     exactKeys(raw, ['label', 'family', 'description', 'cyclic'], 'Graph topology component');
-    if (!TOPOLOGIES.includes(recipe.sourceId)) throw new Error('Unknown original graph topology');
+    if (!TOPOLOGIES.includes(recipe.sourceId)) throw new GraphDocumentError('Graph topology component.sourceId is not a known original topology.');
     graph = cloneGraphDocument(PRESETS[2]!);
     const topology = graph.nodes.find(node => node.kind === 'graph.topology')!;
     topology.params = { ...topology.params, topology: recipe.sourceId, nodeCount: 12, density: .36, seed: 17 };

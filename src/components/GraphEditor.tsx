@@ -1,7 +1,7 @@
 import { memo, useEffect, useMemo, useState } from 'react';
 import { Background, BackgroundVariant, Controls, Handle, MiniMap, Position, ReactFlow, useUpdateNodeInternals, type Node, type NodeProps } from '@xyflow/react';
 import { Pin } from 'lucide-react';
-import { getOperatorDefinition, tryCompileGraph, type GraphDocument, type GraphNode } from '../graph';
+import { getOperatorDefinition, parameterList, tryCompileGraph, type GraphDocument, type GraphNode } from '../graph';
 import { useProjectStore } from '../store';
 import { ParameterControl } from './ParameterControl';
 import { nodePresentation, signalColor } from './presentation';
@@ -18,7 +18,7 @@ const OperatorNode = memo(function OperatorNode({ data, selected }: NodeProps<Fl
   const [showModulation, setShowModulation] = useState(false);
   const updateNodeInternals = useUpdateNodeInternals();
   const isReader = data.node.kind === 'shapes.reader';
-  const denseControls = data.node.kind.startsWith('shapes.') && definition.params.length > 4;
+  const denseControls = data.node.kind.startsWith('shapes.') && Object.keys(definition.params).length > 4;
   const inputs = definition.inputs.filter(port => !denseControls || showModulation || port.required || data.project.edges.some(edge => edge.target.nodeId === data.node.id && edge.target.portId === port.id));
   useEffect(() => { updateNodeInternals(data.node.id); }, [data.node.id, inputs.length, updateNodeInternals]);
   return <article className={`operator-node ${selected ? 'selected' : ''} ${data.active ? '' : 'inactive'}`}
@@ -35,10 +35,10 @@ const OperatorNode = memo(function OperatorNode({ data, selected }: NodeProps<Fl
     </div>
     {denseControls && <button className="node-view-button nodrag" onClick={() => setShowModulation(!showModulation)}>{showModulation ? 'Hide unused modulation inputs' : 'Show modulation inputs'}</button>}
     <DeviceActions kind={data.node.kind} />
-    <div className={`node-parameters ${denseControls ? 'dense-node-controls nowheel' : ''}`}>{isReader ? <ShapesPlayheadControls node={data.node} project={data.project} compact onPin={() => store.pinView(data.node.id, 'playheads')} /> : definition.params.map((param) => <ParameterControl key={param.id} nodeId={data.node.id} parameter={param}
-      value={data.node.params[param.id] ?? param.default} compact
+    <div className={`node-parameters ${denseControls ? 'dense-node-controls nowheel' : ''}`}>{isReader ? <ShapesPlayheadControls node={data.node} project={data.project} compact onPin={() => store.pinView(data.node.id, 'playheads')} /> : parameterList(definition).map((param) => <ParameterControl key={param.id} nodeId={data.node.id} parameter={param}
+      value={data.node.params[param.id] ?? param.defaultValue} compact
       wired={data.project.edges.some((edge) => edge.target.nodeId === data.node.id && edge.target.portId === param.id)}
-      onChange={(value) => store.setParameter(data.node.id, param.id, value)} onBegin={store.beginGesture} onEnd={store.endGesture}
+      onChange={(value) => store.setNodeParam(data.node.id, param.id, value)} onBegin={store.beginGesture} onEnd={store.endGesture}
       onPin={() => store.pinParameter(data.node.id, param.id)} />)}
       {!isReader && definition.views.map((view) => <button type="button" key={view.id} className="node-view-button nodrag" onClick={() => store.pinView(data.node.id, view.id)}><Pin size={12} /> {view.label}</button>)}
     </div>
@@ -55,9 +55,9 @@ export function GraphEditor() {
   const [selectedEdges, setSelectedEdges] = useState<Set<string>>(() => new Set());
   const compilation = useMemo(() => tryCompileGraph(project), [project]);
   const nodes = useMemo<FlowNode[]>(() => project.nodes.map((node) => ({
-    id: node.id, type: 'operator', position: node.position, selected: store.selection === node.id,
+    id: node.id, type: 'operator', position: node.position, selected: store.selectedNodeId === node.id,
     data: { node, project, active: compilation.ok ? compilation.graph.reachableNodeIds.has(node.id) : true },
-  })), [project, store.selection, compilation]);
+  })), [project, store.selectedNodeId, compilation]);
   const edges = useMemo(() => project.edges.map((edge) => {
     const source = project.nodes.find((node) => node.id === edge.source.nodeId);
     const port = source && getOperatorDefinition(source.kind).outputs.find((candidate) => candidate.id === edge.source.portId);
@@ -73,7 +73,7 @@ export function GraphEditor() {
       onNodeDragStart={(_event, node) => store.beginGesture(`move:${node.id}`)}
       onNodeDrag={(_event, node) => store.moveNode(node.id, node.position)}
       onNodeDragStop={(_event, node) => { store.moveNode(node.id, node.position); store.endGesture(`move:${node.id}`); }}
-      onNodesDelete={(removed) => removed.forEach((node) => store.removeNode(node.id))}
+      onNodesDelete={(removed) => removed.forEach((node) => store.deleteNode(node.id))}
       onEdgesDelete={(removed) => removed.forEach((edge) => store.disconnect(edge.id))}
       onConnect={(connection) => {
         if (connection.sourceHandle && connection.targetHandle) store.connect(

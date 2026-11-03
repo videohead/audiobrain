@@ -1,7 +1,17 @@
+import type { ParamDefinition, ParamDefinitions, ParamValue, ParamValues } from '@brain/control/graph/params';
 import type { PresetOrigin } from '../presets/types';
 
-export type ParameterValue = number | string | boolean;
-export type GraphParams = Record<string, ParameterValue>;
+export type {
+  BooleanParamDefinition,
+  NumberParamDefinition,
+  SelectParamDefinition,
+  SelectParamOption,
+  StringParamDefinition,
+} from '@brain/control/graph/params';
+
+export type GraphParamValue = ParamValue;
+export type GraphParams = ParamValues;
+export type OperatorParamDefinition = ParamDefinition;
 export type GraphPosition = { x: number; y: number };
 export type GraphEndpoint = { nodeId: string; portId: string };
 export type ParameterTarget = { nodePath: [string]; paramId: string };
@@ -36,14 +46,7 @@ export interface GraphDocument {
 }
 export type SignalType = 'transport.state' | 'geometry.path' | 'geometry.features' | 'music.voices' | 'event.feature' | 'event.note' | 'geometry.graph' | 'audio.block' | 'control.f32' | 'text.utf8';
 export interface PortDefinition { id: string; label: string; type: SignalType; schemaVersion: number; required?: boolean }
-interface ParameterBase { id: string; label: string; unit?: string }
-export type ParameterDefinition = ParameterBase & (
-  | { type: 'number'; default: number; min: number; max: number; step: number }
-  | { type: 'integer'; default: number; min: number; max: number; step: number }
-  | { type: 'text'; default: string; maxLength: number }
-  | { type: 'enum'; default: string; choices: string[] }
-);
-export interface ViewDefinition { id: string; label: string; intents: { id: string; label: string; paramType: ParameterDefinition['type'] }[] }
+export interface ViewDefinition { id: string; label: string; intents: { id: string; label: string; paramType: OperatorParamDefinition['type'] }[] }
 export interface OperatorDefinition {
   kind: string;
   title: string;
@@ -51,7 +54,7 @@ export interface OperatorDefinition {
   runtime: { status: string; domain: string; clock: string };
   inputs: PortDefinition[];
   outputs: PortDefinition[];
-  params: ParameterDefinition[];
+  params: ParamDefinitions;
   views: ViewDefinition[];
   demandRoot: 'view' | 'monitor' | 'audio-output' | 'external-output' | null;
 }

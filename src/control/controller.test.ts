@@ -37,7 +37,7 @@ beforeEach(() => {
   Object.defineProperty(navigator, 'requestMIDIAccess', { configurable: true, value: vi.fn(() => Promise.resolve(access)) });
   const document = cloneGraphDocument(PRESETS[0]!);
   document.nodes.push({ ...createNode('audio.gain'), id: 'ctl-gain' });
-  expect(projectStore.getState().loadProject(document)).toBe(true);
+  expect(projectStore.getState().importProject(document).ok).toBe(true);
   playing = false; calls = [];
   cleanup = controller.initialize({
     setPlaying: (value) => { playing = value; calls.push(`play:${value}`); },

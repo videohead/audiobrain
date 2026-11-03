@@ -1,8 +1,8 @@
 import { useId } from 'react';
 import { Pin } from 'lucide-react';
-import type { OperatorDefinition } from '../graph';
+import type { ParameterEntry } from '../graph';
 
-type Parameter = OperatorDefinition['params'][number];
+type Parameter = ParameterEntry;
 const choiceLabels: Record<string, string> = { continuous: 'Synth', notes: 'Notes', triggers: 'Drums / triggers' };
 
 export interface ParameterControlProps {
@@ -27,8 +27,7 @@ function formatValue(value: number | string | boolean, unit = ''): string {
 export function ParameterControl({ nodeId, parameter, value, liveValue, wired, onChange, onBegin, onEnd, onPin, compact }: ParameterControlProps) {
   const inputId = useId();
   const gesture = `${nodeId}:${parameter.id}:${inputId}`;
-  const numeric = parameter.type === 'number' || parameter.type === 'integer';
-  const unit = numeric ? parameter.unit : '';
+  const unit = parameter.type === 'number' ? parameter.unit ?? '' : '';
   return (
     <div className={`parameter-control nodrag nopan nowheel ${compact ? 'compact' : ''} ${wired ? 'is-wired' : ''}`}
       onPointerDown={(event) => event.stopPropagation()} onDoubleClick={(event) => event.stopPropagation()}>
@@ -37,17 +36,19 @@ export function ParameterControl({ nodeId, parameter, value, liveValue, wired, o
         <output htmlFor={inputId}>{formatValue(value, unit)}</output>
         {onPin && <button className="pin-button" type="button" onClick={onPin} aria-label={`Add ${parameter.label} to performance`} title="Add to performance"><Pin size={12} /></button>}
       </div>
-      {numeric ? (
+      {parameter.type === 'number' ? (
         <input id={inputId} type="range" min={parameter.min} max={parameter.max} step={parameter.step} value={Number(value)}
           onPointerDown={(event) => { event.stopPropagation(); event.currentTarget.setPointerCapture(event.pointerId); onBegin?.(gesture); }}
           onPointerUp={() => onEnd?.(gesture)} onPointerCancel={() => onEnd?.(gesture)} onLostPointerCapture={() => onEnd?.(gesture)}
           onKeyDown={(event) => { event.stopPropagation(); if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) onBegin?.(gesture); }}
           onKeyUp={() => onEnd?.(gesture)} onBlur={() => onEnd?.(gesture)}
           onChange={(event) => onChange(Number(event.target.value))} />
-      ) : parameter.type === 'enum' ? (
+      ) : parameter.type === 'select' ? (
         <select id={inputId} value={String(value)} onChange={(event) => onChange(event.target.value)}>
-          {parameter.choices.map((choice) => <option key={choice} value={choice}>{parameter.id === 'playingMode' ? choiceLabels[choice] ?? choice : choice}</option>)}
+          {parameter.options.map((option) => <option key={option.value} value={option.value}>{parameter.id === 'playingMode' ? choiceLabels[option.value] ?? option.label : option.label}</option>)}
         </select>
+      ) : parameter.type === 'boolean' ? (
+        <input id={inputId} type="checkbox" checked={value === true} onChange={(event) => onChange(event.target.checked)} />
       ) : (
         <input id={inputId} className="text-parameter" type="text" value={String(value)} maxLength={parameter.maxLength}
           onFocus={() => onBegin?.(gesture)} onBlur={() => onEnd?.(gesture)}
