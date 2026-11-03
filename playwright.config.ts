@@ -1,19 +1,14 @@
 import { defineConfig, devices } from '@playwright/test';
 
-const publicBaseURL = process.env.PLAYWRIGHT_BASE_URL;
-
 const chromiumExecutablePath =
   process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;
 
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
-  forbidOnly: Boolean(process.env.CI),
-  retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
-  reporter: process.env.CI ? 'github' : 'list',
+  reporter: 'list',
   use: {
-    baseURL: publicBaseURL ?? 'http://127.0.0.1:5178',
+    baseURL: 'http://127.0.0.1:5178',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     launchOptions: {
@@ -34,7 +29,7 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
   ],
-  webServer: publicBaseURL ? undefined : {
+  webServer: {
     command: 'npm run preview',
     port: 5178,
     reuseExistingServer: false,

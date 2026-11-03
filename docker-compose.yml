@@ -1,30 +1,19 @@
+# The OSC gateway (and optional Companion control) is the shared relay in ../brain-control.
+include:
+  - path: ../brain-control/docker-compose.yml
+
 services:
   audiobrain-web:
     build:
       context: .
       dockerfile: Dockerfile.web
+      additional_contexts:
+        brain-control: ../brain-control
     image: audiobrain-web
     container_name: audiobrain-web
     restart: unless-stopped
     ports:
       - "127.0.0.1:${AUDIOBRAIN_WEB_PORT:-5178}:80"
-
-  audiobrain-osc:
-    build:
-      context: .
-      dockerfile: Dockerfile.osc
-    image: audiobrain-osc
-    container_name: audiobrain-osc
-    restart: unless-stopped
-    ports:
-      - "127.0.0.1:8787:8787"
-      - "127.0.0.1:9001:9001/udp"
-    environment:
-      - OSC_TARGET_HOST=${OSC_TARGET_HOST:-host.docker.internal}
-      - OSC_TARGET_PORT=${OSC_TARGET_PORT:-9000}
-      - OSC_ALLOWED_ORIGINS=${OSC_ALLOWED_ORIGINS:-http://127.0.0.1:5178,http://localhost:5178}
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
 
   # Development: docker compose --profile dev up audiobrain-dev
   audiobrain-dev:
@@ -32,6 +21,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.dev
+      additional_contexts:
+        brain-control: ../brain-control
     image: audiobrain-dev
     container_name: audiobrain-dev
     ports:
@@ -39,6 +30,7 @@ services:
     volumes:
       - .:/app
       - /app/node_modules
+      - ../brain-control:/brain-control
     environment:
       - CHOKIDAR_USEPOLLING=true
 
@@ -48,6 +40,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.dev
+      additional_contexts:
+        brain-control: ../brain-control
     image: audiobrain-dev
     container_name: audiobrain-storybook
     command: ["npm", "run", "storybook", "--", "--host", "0.0.0.0"]
@@ -56,3 +50,4 @@ services:
     volumes:
       - .:/app
       - /app/node_modules
+      - ../brain-control:/brain-control

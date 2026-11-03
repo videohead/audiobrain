@@ -50,14 +50,15 @@ resolved connected values. Runtime graph output roots, event transport and audio
 streams are future extensions. AudioBrain output uses its evaluated control
 snapshots, not audio samples; this bridge does not promise sample-accurate timing.
 
-The companion recognizes `https://audiobrain.org`,
-`http://127.0.0.1:5178` and `http://localhost:5178`. AudioBrain can open an explicit
+AudioBrain runs locally at `http://127.0.0.1:5178` or `http://localhost:5178`, the
+origins the OSC gateway allows by default. AudioBrain can open an explicit
 HTTPS VideoBrain URL or a loopback development URL. Other origins require a
 reviewed allowlist change; the pairing fragment alone never grants access.
 
 ### Adapter API
 
-`src/adapters/brainBridge.ts` exposes `openBrainPeer`, `readBrainPairing` and
+`src/adapters/brainBridge.ts` re-exports the shared `@brain/control/protocol/brain`
+module, which exposes `openBrainPeer`, `readBrainPairing` and
 `attachBrainBridge`. `bindRuntimeControls` in `src/adapters/runtimeControls.ts`
 reads the actual project nodes and runtime snapshots; it returns selected
 channels, an inbound control handler and disposal. Recreate the binding when the
@@ -84,10 +85,11 @@ multiple arguments and timetags are not implemented. Each OSC In/Out node select
 one explicit address; unknown addresses are ignored. The adapter bounds traffic
 and queued bytes, suppresses direct echoes and closes its socket on disconnect.
 
-A real local UDP gateway is included:
+A real local UDP gateway is provided by the shared relay in `../brain-control`
+(`server/osc-gateway.mjs`, image `brain-relay`):
 
 ```sh
-npm run osc:gateway
+docker compose up brain-relay
 ```
 
 By default it listens for browser connections at `ws://127.0.0.1:8787`, accepts
@@ -112,8 +114,8 @@ three AudioBrain origins listed above, at most four clients, 4 KiB messages and
 
 A locally served AudioBrain may use loopback `ws://`. Hosted AudioBrain requires
 `wss://`, including when talking to a local gateway; supply a browser-trusted TLS
-certificate or an explicitly configured secure reverse proxy. The static AWS
-site does not deploy this gateway or hold its TLS key. Do not expose the gateway
+certificate or an explicitly configured secure reverse proxy. The static web build
+does not include this gateway or hold its TLS key. Do not expose the gateway
 as an unauthenticated public UDP relay.
 
 Browser tests use deterministic message/socket fixtures. The gateway tests also

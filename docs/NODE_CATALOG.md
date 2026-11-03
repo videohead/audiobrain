@@ -1,6 +1,6 @@
 # Node catalog and delivery waves
 
-Version 0.1 implements **34 operators** from the [production catalog](../contracts/operator-catalog.json). The library only exposes those registered implementations. Hardware/gateway nodes can still be disabled, unavailable or disconnected in a session; that readiness state is different from a node with no runtime.
+Version 0.3 implements **34 operators** from the [production catalog](../contracts/operator-catalog.json). The library only exposes those registered implementations. Hardware/gateway nodes can still be disabled, unavailable or disconnected in a session; that readiness state is different from a node with no runtime.
 
 | Implemented area | Stable node kinds |
 | --- | --- |

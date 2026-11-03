@@ -1,6 +1,6 @@
 # Implementation status and plan
 
-Status: AudioBrain 0.1.0 implements the first three instrument flows and a working application. The sequence below is the retained design baseline, with broader acceptance targets that are not all shipped. [README](../README.md) is the current user-facing scope; [provenance](PROVENANCE.md) records actual behavior and limits.
+Status: AudioBrain 0.3.0 implements the first three instrument flows and a working application. The sequence below is the retained design baseline, with broader acceptance targets that are not all shipped. [README](../README.md) is the current user-facing scope; [provenance](PROVENANCE.md) records actual behavior and limits.
 
 | Slice | Current implementation | Remaining work |
 | --- | --- | --- |
@@ -9,13 +9,12 @@ Status: AudioBrain 0.1.0 implements the first three instrument flows and a worki
 | L-Systems and Graphs | Source-derived grammar/branches and seeded graph traversal, separate musical mapping/voices, playable presets | Original microphone processor, graph vertex/edge authoring, drums/delay variants and full timbral parity |
 | Standard audio and I/O | Oscillator/filter/delay/pan, microphone, MIDI input and selected output, scalar Brain/OSC transport and local OSC gateway | More effects/analyzers, MIDI learn/clock, files/recording, graph runtime outputs in VideoBrain and clock/media transport |
 | Modules and surround | Top-level expanded graph documents; stereo panning/output | Nested reusable module schema/editor and discrete speaker/channel mapping |
-| CI/publication | Workflow, static deployment artifact, Storybook, AWS templates/scripts and release identity checks | Authenticated cloud inventory/configuration and successful verified publication |
 
 The initial baseline budgets have been replaced by the actual limits in [Contracts](CONTRACTS.md#clock-and-queue-contract). Steps below remain the roadmap and acceptance design; a feature is complete only where the status table or current README explicitly says so.
 
 ## 0. Contract baseline — delivered foundation
 
-Deliver the three flow inventories, types/lifecycles, performance binding design, preset fixtures and deployment audit. Validate each fixture's declared ports, bounds, graph structure and widget references. Keep open engineering questions explicit: measured event/DSP budget, module extraction seam, cross-app pairing experience and actual Audiobrain cloud resource inventory.
+Deliver the three flow inventories, types/lifecycles, performance binding design, and preset fixtures. Validate each fixture's declared ports, bounds, graph structure and widget references. Keep open engineering questions explicit: measured event/DSP budget, module extraction seam and cross-app pairing experience.
 
 Exit: the boundaries can represent all three flows without DOM selectors, engine-owned destinations or hidden value coercion. A validated fixture proves design consistency only.
 
@@ -42,8 +41,6 @@ stories/                 production components and complete teaching graphs
 tests/                   compiler/contract/runtime/browser fixtures
 public/worklets/          built/loadable worklet assets as appropriate to Vite
 server/                  optional local read-only graph inspection adapter
-infra/                   reviewed Audiobrain AWS configuration
-.github/workflows/       verified build and publishing gates
 ```
 
 The draft catalog has been promoted to the production registry. Future inspection/catalog exports must continue to derive from it. Version project schema independently from operator catalog and inspection API. Implement audio/event/geometry types in validation, compiler, UI, catalog and tests together. Add active audio/view/adapter output roots and budget accounting. Preserve the last valid plan on invalid edits.
@@ -84,12 +81,6 @@ Complete public module ports/parameters/views, per-instance versus shared-defini
 
 Exit: expanding and re-saving a module preserves sound/control behavior and every public performance binding. Multichannel acceptance records browser, interface, channel order and fallback behavior. A hardware-free CI result is not presented as listening or speaker verification.
 
-## 6. CI and first deployment
-
-Prepare the reviewed AWS templates, bootstrap preflight, production environment and OIDC workflow described in [Deployment](DEPLOYMENT.md). Authenticate read-only inventory first to identify existing `audiobrain.org` DNS/CDN/bucket/certificate resources. Use project-specific resources and trust policies even when the AWS account and operator credentials are shared.
-
-Run the VideoBrain-equivalent verification chain against Audiobrain. Ensure the deploy artifact includes `/storybook/`, worker/worklet assets, documentation/help links and build identity. Obtain a complete successful pipeline, inspect actual public app/catalog/worklet bytes, exercise audio activation and all three presets, and retain a rollback artifact. A future publish request must be verified through deploy completion, not merely a successful push.
-
 ## Verification strategy
 
 | Layer | Evidence that matters |
@@ -102,6 +93,6 @@ Run the VideoBrain-equivalent verification chain against Audiobrain. Ensure the 
 | Integrations | Denied/unsupported/disconnected MIDI/mic; gateway loss; origin/schema/rate rejection; feedback-loop suppression |
 | Teaching/UI | Three full presets, reachable branches, saved layouts, help recipes, production Storybook; desktop/phone portrait/landscape |
 | Human/device | Listening, controller feel, timbral parity, audible transition review, actual surround map |
-| Release | Lint/types/unit/runtime checks, production+MCP+Storybook build, artifact checks, Chromium end-to-end, remote publication smoke |
+| Release | Lint/types/unit/runtime checks, production+MCP+Storybook build, artifact checks, Chromium end-to-end |
 
 Do not report a milestone as complete because a registry entry, mockup or JSON fixture exists. Keep the node implementation status visible until its runtime, teaching path and validation ship together.

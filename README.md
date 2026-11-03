@@ -1,17 +1,15 @@
 # AudioBrain
 
+> **Fork notice:** this repository is a fork of [blechdom/audiobrain](https://github.com/blechdom/audiobrain). The original project and its history belong to blechdom; changes here (Dockerized development, shared control layer via [videohead/brain-control](https://github.com/videohead/brain-control)) are maintained separately.
+
 AudioBrain 0.3.0 turns Morphazoid instruments into an editable audio graph and a graphical performance surface. It uses VideoBrain's React, TypeScript, Vite, React Flow and Zustand foundation, with an independent audio runtime and project format.
 
-The application includes **seven playable examples, 34 registered operators and a preserved Morphazoid source preset library**. AWS infrastructure and the verification/publishing workflow are included; a public deployment is complete only after that workflow and public acceptance checks succeed. See [AWS setup](infra/README.md).
+The application includes **seven playable examples, 34 registered operators and a preserved Morphazoid source preset library**.
 
 ## Play an instrument
 
 Use Node.js 22 or newer:
-
-```sh
-npm ci
-npm run dev
-```
+Runs in Docker
 
 Open `http://127.0.0.1:5178`, choose an instrument, enable audio, and press Play. Audio activation and transport are separate controls. Space plays or pauses when focus is outside a control; Escape stops sounding voices. Built-in instruments need no microphone, MIDI device, account or network service.
 
@@ -48,7 +46,7 @@ The [authoritative operator catalog](contracts/operator-catalog.json) supplies a
 - Oscillator, gain, low/high/band-pass filter, delay, stereo pan, microphone input, audio output and RMS level analysis.
 - MIDI In/Out, OSC In/Out and Brain Control In/Out adapters.
 
-Microphone and MIDI each require explicit session activation; MIDI output additionally requires a selected output device. OSC uses the included optional gateway (`npm run osc:gateway`). VideoBrain pairing exchanges selected scalar controls: AudioBrain exports evaluated graph controls, while the VideoBrain companion sends and receives selected saved numeric parameter literals. See [integration setup and limitations](docs/INTEGRATION.md).
+Microphone and MIDI each require explicit session activation; MIDI output additionally requires a selected output device. OSC uses the optional shared relay in `../brain-control` (`docker compose up brain-relay`). VideoBrain pairing exchanges selected scalar controls: AudioBrain exports evaluated graph controls, while the VideoBrain companion sends and receives selected saved numeric parameter literals. See [integration setup and limitations](docs/INTEGRATION.md).
 
 ## Current scope
 
@@ -56,21 +54,17 @@ The three instrument families are editable top-level graphs; full source feature
 
 The native audio rack admits up to 96 simultaneous voices globally and 32 per voice bank. Shapes has at most twelve heads. L-System expansion is limited to 32,768 symbols and 4,096 segments; event batches are limited to 256. All original grammar defaults fit; larger expansions fail explicitly. A 25 ms host timer schedules a 100 ms lookahead onto Web Audio. Views do not schedule sound, but browser background throttling remains a timer-scheduler limitation. Graph documents are bounded to 128 nodes, 512 cables, 64 performance widgets and a 1 MiB JSON import.
 
-## Develop and release
+## Develop
 
 ```sh
 npm run verify
-npm run build:deploy
-npm run check:storybook-dist
 npx playwright install chromium
 npm run test:e2e
 ```
 
 `verify` runs lint, type checking, unit/gateway tests, feature and source-preset preservation checks, production preset validation and the app build. Browser coverage includes source preset reconstruction, independent instance identities, export/import, real `OfflineAudioContext` rendering of all three instruments, finite audio, gain response and silence after output disconnection. These checks complement listening and physical-device testing.
 
-Run `npm run storybook` for the production component catalog on port 6006. `build:deploy` includes that catalog under `dist/storybook`; `dist/build.json` identifies the app version and source commit.
-
-The [GitHub workflow](.github/workflows/deploy-aws.yml) verifies pull requests and main-branch pushes, then publishes through a dedicated AudioBrain GitHub OIDC role when the four verified AWS repository variables are configured. Assets publish before HTML, followed by CloudFront invalidation and public checks. Missing configuration is reported explicitly. [Infrastructure instructions](infra/README.md) cover authenticated inventory, preparation, release identity and rollback; [deployment design](docs/DEPLOYMENT.md) retains the source audit and cutover rationale.
+Run `npm run storybook` for the production component catalog on port 6006.  `npm run build:storybook` produces a static copy.
 
 ## Architecture and source inventory
 

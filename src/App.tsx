@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import { Activity, ArrowUpRight, AudioLines, ChevronDown, CircleHelp, Copy, Download, Expand, FolderOpen, FilePlus2, Grip, LayoutGrid, Network, Pause, Pencil, Pin, Play, Plus, Radio, Redo2, RotateCcw, Search, Square, Trash2, Undo2, Volume2, VolumeX, X } from 'lucide-react';
+import { SlidersHorizontal, Activity, ArrowUpRight, AudioLines, ChevronDown, CircleHelp, Copy, Download, Expand, FolderOpen, FilePlus2, Grip, LayoutGrid, Network, Pause, Pencil, Pin, Play, Plus, Radio, Redo2, RotateCcw, Search, Square, Trash2, Undo2, Volume2, VolumeX, X } from 'lucide-react';
 import { GRAPH_LIMITS, OPERATOR_DEFINITIONS, PRESETS, getOperatorDefinition, createId, parseGraphDocument, serializeGraphDocument } from './graph';
 import { projectStore, useProjectStore } from './store';
 import { AudioBrainRuntime } from './runtime/AudioBrainRuntime';
@@ -8,6 +8,8 @@ import { ParameterControl } from './components/ParameterControl';
 import { RuntimeContext } from './components/RuntimeContext';
 import { DeviceActions } from './components/DeviceActions';
 import { ConnectionsPanel } from './components/ConnectionsPanel';
+import { ControllersPanel } from './components/ControllersPanel';
+import { controller } from './control/controller';
 import { ViewBindings } from './components/ViewBindings';
 import { nodePresentation } from './components/presentation';
 import { PerformanceSurface } from './performance/PerformanceSurface';
@@ -26,7 +28,7 @@ export function App() {
   const [search, setSearch] = useState('');
   const [libraryOpen, setLibraryOpen] = useState(true);
   const [notice, setNotice] = useState<string | null>(null);
-  const [dialog, setDialog] = useState<'help' | 'connections' | 'rename' | 'presets' | null>(null);
+  const [dialog, setDialog] = useState<'help' | 'connections' | 'controllers' | 'rename' | 'presets' | null>(null);
   const [draftTitle, setDraftTitle] = useState('');
   const [presetBusyId, setPresetBusyId] = useState<string | null>(null);
   const [presetError, setPresetError] = useState<string | null>(null);
@@ -41,6 +43,7 @@ export function App() {
 
   useEffect(() => { runtime.setProject(store.document); }, [runtime, store.document]);
   useEffect(() => () => { void runtime.dispose(); }, [runtime]);
+  useEffect(() => controller.initialize(runtime), [runtime]);
   useEffect(() => { if (dialog) dialogRef.current?.showModal(); else dialogRef.current?.close(); }, [dialog]);
 
   const save = () => {
@@ -117,6 +120,7 @@ export function App() {
       </div>
       <div className="topbar-actions"><button className="icon-button" title="New instrument" aria-label="New instrument" onClick={() => { store.loadProject({ documentType: 'audiobrain.project', schemaVersion: 1, id: createId('project'), title: 'Untitled Morphazoid', nodes: [], edges: [], performance: { version: 1, columns: 12, widgets: [] } }); setNotice(null); setMode('graph'); }}><FilePlus2 size={17} /></button><button className="icon-button" title="Import project" aria-label="Import project" onClick={() => importInput.current?.click()}><FolderOpen size={17} /></button>
         <button className="icon-button" title="Export project" aria-label="Export project" onClick={save}><Download size={17} /></button>
+        <button className="icon-button" title="Controllers (incomplete)" aria-label="Controllers" onClick={() => setDialog('controllers')}><SlidersHorizontal size={17} /></button>
         <button className="icon-button" title="Help" aria-label="Help" onClick={() => setDialog('help')}><CircleHelp size={17} /></button>
       </div>
     </header>
@@ -171,11 +175,12 @@ export function App() {
       run(file.text().then((text) => { const value = JSON.parse(text) as unknown; const isPreset = value !== null && typeof value === 'object' && 'documentType' in value && value.documentType === 'audiobrain.instrument-preset'; const project = isPreset ? reconstructPreset(parsePresetDefinition(value)) : parseGraphDocument(value); if (store.loadProject(project)) setNotice(isPreset ? 'Preset rebuilt with its saved settings and layout.' : 'Project imported.'); })); event.target.value = '';
     }} />
     <dialog className={`app-dialog${dialog === 'presets' ? ' preset-library-dialog' : ''}`} ref={dialogRef} onCancel={closeDialog} onClick={(event) => { if (event.target === event.currentTarget) closeDialog(); }}>
-      <header><h2>{dialog === 'help' ? 'A little strange. Very playable.' : dialog === 'rename' ? 'Name your instrument' : dialog === 'presets' ? 'Morphazoid presets' : 'Connections'}</h2><button className="icon-button" aria-label="Close dialog" onClick={closeDialog}><X size={18} /></button></header>
+      <header><h2>{dialog === 'help' ? 'A little strange. Very playable.' : dialog === 'rename' ? 'Name your instrument' : dialog === 'presets' ? 'Morphazoid presets' : dialog === 'controllers' ? 'Controllers' : 'Connections'}</h2><button className="icon-button" aria-label="Close dialog" onClick={closeDialog}><X size={18} /></button></header>
       {dialog === 'help' ? <div className="help-content"><p>AudioBrain turns Morphazoid instruments into connected, reusable parts.</p><ol><li>Open Presets to load Shapes, L-Systems, or Graphs, or add another independent instrument.</li><li>Enable audio, then press Play. Audio and transport are separate.</li><li>Drag the instrument graphic or move a slider. Each gesture changes the same controls shown in the graph.</li><li>Pin a node control, choose Arrange, and move or resize it. Perform locks the layout.</li><li>Connect compatible ports to change the instrument. Select an edge and press Delete to disconnect it.</li></ol><p>Shapes Playheads controls choose point, line, or radar readers, count, direction, and relative positions. In Graph, select a Shapes Reader and pin Playheads if your saved layout does not yet include it. Curvature defaults to zero in new presets; your saved values are preserved.</p><p>Select any node to name or duplicate it in the Inspector. Stable IDs keep cables, controls, and saved state attached to the right object.</p><p>Space plays or pauses outside a control. Escape stops sounding voices. Your project saves in this browser; Export makes a portable copy with its performance layout.</p><p>Microphone and MIDI require their own explicit enable action. OSC needs a compatible WebSocket gateway. These device connections are never stored in a project.</p><a href="/storybook/" target="_blank" rel="noreferrer">Explore the component catalog <ArrowUpRight size={13} /></a></div>
         : null}
       {dialog === 'presets' && <><div className="preset-library-tools"><button className="secondary-button" onClick={saveCurrentPreset}><Download size={13} />Export current as preset</button><button className="secondary-button" onClick={() => { closeDialog(); importInput.current?.click(); }}><FolderOpen size={13} />Import preset or project</button></div><PresetLibrary entries={PRESET_LIBRARY_ENTRIES} onLoad={id => applyPreset(id, 'load')} onAdd={id => applyPreset(id, 'add')} onExport={exportPreset} busyId={presetBusyId} error={presetError} /></>}
       {dialog === 'rename' && <form className="help-content" onSubmit={event => { event.preventDefault(); if (draftTitle.trim()) { store.setTitle(draftTitle.trim()); setDialog(null); } }}><label className="connection-field">Instrument name<input value={draftTitle} onChange={event => setDraftTitle(event.target.value)} maxLength={96} required /></label><button className="secondary-button" type="submit" disabled={!draftTitle.trim()}>Save name</button></form>}
+      {dialog === 'controllers' && <ControllersPanel project={store.document} />}
       <div hidden={dialog !== 'connections'}><ConnectionsPanel runtime={runtime} snapshot={snapshot} project={store.document} /></div>
     </dialog>
   </div></RuntimeContext.Provider>;

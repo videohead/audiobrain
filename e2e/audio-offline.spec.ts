@@ -8,7 +8,6 @@ import type * as AudioModule from '../src/audio/AudioRack';
 import type * as EvaluationModule from '../src/runtime/GraphEvaluator';
 import type * as GraphModule from '../src/graph';
 
-test.skip(Boolean(process.env.PLAYWRIGHT_BASE_URL), 'Offline DSP checks use authored TypeScript modules from a local Vite test server. Public acceptance is covered by studio.spec.ts.');
 let server: ViteDevServer;
 let sourceBase: string;
 let cacheDir: string;
